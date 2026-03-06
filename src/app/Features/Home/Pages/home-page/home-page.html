@@ -1,0 +1,23 @@
+
+<section class="space-y-8">
+  <header class="space-y-3">
+    <h1 class="text-3xl font-bold text-zinc-100 sm:text-9xl">Bienvenue sur TCGLib</h1>
+    <p class="max-w-2xl text-zinc-300">
+      
+    </p>
+  </header>
+
+  <div class="grid gap-4 md:grid-cols-2">
+    @for (action of quickActions; track action.path) {
+      <a
+        [routerLink]="action.path"
+        class="rounded-xl border border-zinc-800 bg-zinc-900 p-5 transition hover:border-amber-400/60 hover:bg-zinc-800/80"
+      >
+        <h2 class="text-lg font-semibold text-zinc-100">{{ action.label }}</h2>
+        <p class="mt-2 text-sm text-zinc-300">{{ action.description }}</p>
+      </a>
+    }
+  </div>
+
+  
+</section>
