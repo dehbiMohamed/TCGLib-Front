@@ -2,13 +2,49 @@
   <header class="space-y-2">
     <h1 class="text-2xl font-bold text-zinc-100 sm:text-3xl">Mes decks</h1>
     <p class="text-zinc-300">
-      Jour 1: on prépare la navigation. Le détail complet et l’édition viendront ensuite.
+      Cree un deck en local pour preparer la future connexion avec le backend.
     </p>
   </header>
 
-  @if (decks.length > 0) {
+  <section class="rounded-xl border border-zinc-800 bg-zinc-900 p-5">
+    <h2 class="text-lg font-semibold text-zinc-100">Creer un deck</h2>
+
+    <div class="mt-4 grid gap-4 md:grid-cols-[1fr,220px,auto]">
+      <input
+        #deckNameInput
+        type="text"
+        placeholder="Ex: Azorius Control"
+        class="rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-zinc-100"
+      />
+
+      <select
+        #deckFormatInput
+        class="rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-zinc-100"
+      >
+        @for (format of formatOptions; track format) {
+          <option [value]="format">{{ format }}</option>
+        }
+      </select>
+
+      <button
+        type="button"
+        class="rounded-lg bg-amber-400 px-4 py-2 font-medium text-zinc-950 transition hover:bg-amber-300"
+        (click)="createDeck(deckNameInput.value, deckFormatInput.value); deckNameInput.value = ''"
+      >
+        Creer
+      </button>
+    </div>
+
+    @if (errorMessage()) {
+      <p class="mt-3 rounded-lg border border-red-700 bg-red-950/30 p-3 text-sm text-red-200">
+        {{ errorMessage() }}
+      </p>
+    }
+  </section>
+
+  @if (hasDecks()) {
     <div class="grid gap-4 md:grid-cols-2">
-      @for (deck of decks; track deck.id) {
+      @for (deck of decks(); track deck.id) {
         <a
           [routerLink]="['/decks', deck.id]"
           class="rounded-xl border border-zinc-800 bg-zinc-900 p-5 transition hover:border-amber-400/60 hover:bg-zinc-800/80"
@@ -16,19 +52,18 @@
           <div class="flex items-center justify-between gap-3">
             <h2 class="text-lg font-semibold text-zinc-100">{{ deck.name }}</h2>
             <span class="rounded-full border border-zinc-700 px-2 py-1 text-xs text-zinc-300">
-              {{ deck.cardCount }} cartes
+              {{ getCardCount(deck) }} cartes
             </span>
           </div>
 
-          <p class="mt-3 text-sm text-zinc-300">Couleurs: {{ deck.colors }}</p>
-          <p class="text-sm text-zinc-300">Format: {{ deck.format }}</p>
-          <p class="mt-3 text-sm font-medium text-amber-400">Voir le détail du deck</p>
+          <p class="mt-3 text-sm text-zinc-300">Format: {{ deck.format }}</p>
+          <p class="mt-3 text-sm font-medium text-amber-400">Voir le detail du deck</p>
         </a>
       }
     </div>
   } @else {
     <p class="rounded-lg border border-dashed border-zinc-700 p-4 text-sm text-zinc-400">
-      Aucun deck pour le moment.
+      Aucun deck pour le moment. Cree ton premier deck ci-dessus.
     </p>
   }
 </section>

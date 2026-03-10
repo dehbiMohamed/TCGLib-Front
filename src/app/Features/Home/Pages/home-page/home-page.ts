@@ -1,6 +1,5 @@
 import { Component } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { read } from 'fs';
 
 interface QuickAction {
   label: string;
@@ -33,4 +32,3 @@ export class HomePage {
     'Structure prête pour les features du jour 2',
   ];
 }
-

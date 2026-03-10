@@ -1,13 +1,8 @@
-import { Component } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { Component, computed, inject, signal } from '@angular/core';
+import { Router, RouterLink } from '@angular/router';
+import { Deck } from '../../../../Models/Deck';
+import { DeckService } from '../../../../Services/deck-service';
 
-interface DeckPreview {
-  id: string;
-  name: string;
-  colors: string;
-  format: string;
-  cardCount: number;
-}
 @Component({
   selector: 'app-decks-page',
   imports: [RouterLink],
@@ -15,8 +10,27 @@ interface DeckPreview {
   styleUrl: './decks-page.css',
 })
 export class DecksPage {
-  readonly decks: DeckPreview[] = [
-    { id: 'azorius-control', name: 'Azorius Control', colors: 'W/U', format: 'Modern', cardCount: 60 },
-    { id: 'mono-red-burn', name: 'Mono Red Burn', colors: 'R', format: 'Pioneer', cardCount: 60 },
-    { id: 'golgari-midrange', name: 'Golgari Midrange', colors: 'B/G', format: 'Standard', cardCount: 60 },
-  ];}
+  private readonly router = inject(Router);
+  private readonly deckService = inject(DeckService);
+
+  readonly decks = this.deckService.decks;
+  readonly errorMessage = signal('');
+  readonly hasDecks = computed(() => this.decks().length > 0);
+  readonly formatOptions = ['Standard', 'Modern', 'Pioneer', 'Commander'];
+
+  createDeck(name: string, format: string): void {
+    const newDeck = this.deckService.createDeck(name, format);
+
+    if (!newDeck) {
+      this.errorMessage.set('Entre un nom de deck et un format.');
+      return;
+    }
+
+    this.errorMessage.set('');
+    void this.router.navigate(['/decks', newDeck.id]);
+  }
+
+  getCardCount(deck: Deck): number {
+    return this.deckService.getTotalCardCount(deck);
+  }
+}

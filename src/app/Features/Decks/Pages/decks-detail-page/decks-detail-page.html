@@ -6,28 +6,120 @@
     Retour a mes decks
   </a>
 
-  @if (deck; as currentDeck) {
+  @if (deck(); as currentDeck) {
     <header class="space-y-2">
       <h1 class="text-2xl font-bold text-zinc-100 sm:text-3xl">{{ currentDeck.name }}</h1>
       <p class="text-zinc-300">Format: {{ currentDeck.format }}</p>
+      <p class="text-zinc-300">Total de cartes: {{ totalCards() }}</p>
     </header>
 
     <section class="rounded-xl border border-zinc-800 bg-zinc-900 p-5">
-      <h2 class="text-lg font-semibold text-zinc-100">Plan de jeu</h2>
-      <p class="mt-2 text-zinc-300">{{ currentDeck.gamePlan }}</p>
+      <h2 class="text-lg font-semibold text-zinc-100">Rechercher et ajouter des cartes</h2>
+
+      <div class="mt-4 space-y-3">
+        <input
+          #deckSearchInput
+          type="text"
+          placeholder="Ex: Counterspell"
+          class="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-zinc-100"
+          (input)="onSearchQueryChange(deckSearchInput.value)"
+        />
+        <p class="text-sm text-zinc-400">Recherche en anglais uniquement.</p>
+      </div>
+
+      @if (searchErrorMessage()) {
+        <p class="mt-4 rounded-lg border border-red-700 bg-red-950/30 p-3 text-sm text-red-200">
+          {{ searchErrorMessage() }}
+        </p>
+      }
+
+      @if (addCardMessage()) {
+        <p class="mt-4 rounded-lg border border-emerald-700 bg-emerald-950/30 p-3 text-sm text-emerald-200">
+          {{ addCardMessage() }}
+        </p>
+      }
+
+      @if (searchLoading()) {
+        <p class="mt-4 rounded-lg border border-dashed border-zinc-700 p-3 text-sm text-zinc-400">
+          Recherche en cours...
+        </p>
+      }
+
+      @if (showEmptySearchState()) {
+        <p class="mt-4 rounded-lg border border-dashed border-zinc-700 p-3 text-sm text-zinc-400">
+          Aucune carte trouvee.
+        </p>
+      }
+
+      @if (searchResults().length > 0 && !searchLoading()) {
+        <ul class="mt-4 grid gap-3 md:grid-cols-2">
+          @for (card of searchResults(); track card.id) {
+            <li class="flex items-center gap-3 rounded-lg border border-zinc-800 bg-zinc-950/40 p-3">
+              @if (card.imageUrl) {
+                <img [src]="card.imageUrl" [alt]="card.name" class="h-20 w-14 rounded object-cover" />
+              } @else {
+                <div class="flex h-20 w-14 items-center justify-center rounded bg-zinc-800 text-xs text-zinc-400">
+                  N/A
+                </div>
+              }
+
+              <div class="min-w-0 flex-1">
+                <p class="font-medium text-zinc-100">{{ card.name }}</p>
+                <p class="text-sm text-zinc-400">{{ card.setName }}</p>
+              </div>
+
+              <button
+                type="button"
+                class="rounded-lg border border-zinc-700 px-3 py-2 text-sm text-zinc-200 transition hover:border-amber-400 hover:text-amber-300"
+                (click)="addCard(card)"
+              >
+                Ajouter
+              </button>
+            </li>
+          }
+        </ul>
+      }
     </section>
 
     <section class="rounded-xl border border-zinc-800 bg-zinc-900 p-5">
-      <h2 class="text-lg font-semibold text-zinc-100">Cartes clefs</h2>
-      <ul class="mt-3 space-y-2">
-        @for (card of currentDeck.keyCards; track card) {
-          <li class="text-zinc-300">- {{ card }}</li>
-        }
-      </ul>
+      <h2 class="text-lg font-semibold text-zinc-100">Composition du deck</h2>
+
+      @if (currentDeck.cards.length > 0) {
+        <ul class="mt-4 space-y-3">
+          @for (card of currentDeck.cards; track card.cardId) {
+            <li class="flex items-center gap-4 rounded-lg border border-zinc-800 bg-zinc-950/40 p-3">
+              @if (card.imageUrl) {
+                <img [src]="card.imageUrl" [alt]="card.name" class="h-20 w-14 rounded object-cover" />
+              } @else {
+                <div class="flex h-20 w-14 items-center justify-center rounded bg-zinc-800 text-xs text-zinc-400">
+                  N/A
+                </div>
+              }
+
+              <div class="min-w-0 flex-1">
+                <p class="font-medium text-zinc-100">{{ card.name }}</p>
+                <p class="text-sm text-zinc-400">Quantite: {{ card.quantity }}</p>
+              </div>
+
+              <button
+                type="button"
+                class="rounded-lg border border-zinc-700 px-3 py-2 text-sm text-zinc-200 transition hover:border-red-400 hover:text-red-300"
+                (click)="removeCard(card.cardId)"
+              >
+                Retirer 1
+              </button>
+            </li>
+          }
+        </ul>
+      } @else {
+        <p class="mt-3 rounded-lg border border-dashed border-zinc-700 p-4 text-sm text-zinc-400">
+          Ce deck est vide pour le moment. Va sur les cartes pour en ajouter.
+        </p>
+      }
     </section>
   } @else {
     <p class="rounded-lg border border-dashed border-zinc-700 p-4 text-sm text-zinc-400">
-      Deck introuvable pour l'id: "{{ deckId }}".
+      Deck introuvable pour l'id: "{{ deckId() }}".
     </p>
   }
 </section>

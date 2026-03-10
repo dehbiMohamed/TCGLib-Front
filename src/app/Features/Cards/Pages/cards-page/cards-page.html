@@ -1,36 +1,64 @@
 <section class="space-y-6">
-  <header class="space-y-2">
-    <h1 class="text-2xl font-bold text-zinc-100 sm:text-3xl">Recherche de cartes</h1>
-    <p class="text-zinc-300">
-      Jour 1: on prépare l’interface. La vraie recherche API arrive au jour 2.
-    </p>
-  </header>
+  <h1 class="text-2xl font-bold text-zinc-100 sm:text-3xl">Recherche de cartes</h1>
 
   <section class="rounded-xl border border-zinc-800 bg-zinc-900 p-5">
     <label for="cardQuery" class="mb-2 block text-sm font-medium text-zinc-200">Nom de carte</label>
     <input
+      #queryInput
       id="cardQuery"
       type="text"
-      placeholder="Ex: Black Lotus"
-      class="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-zinc-100 placeholder:text-zinc-500 focus:border-amber-400 focus:outline-none"
+      placeholder="Ex: Black Lotus ou Counterspell"
+      class="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-zinc-100"
+      (input)="onQueryChange(queryInput.value)"
     />
-    <p class="mt-2 text-xs text-zinc-400">Cette zone sera connectée à Scryfall plus tard.</p>
+    <p class="mt-2 text-sm text-zinc-400">Recherche en anglais uniquement.</p>
   </section>
 
-  <section class="rounded-xl border border-zinc-800 bg-zinc-900 p-5">
-    <h2 class="text-lg font-semibold text-zinc-100">Exemples de recherche</h2>
-    <ul class="mt-3 flex flex-wrap gap-2">
-      @for (example of searchExamples; track example) {
-        <li class="rounded-full border border-zinc-700 px-3 py-1 text-sm text-zinc-300">
-          {{ example }}
+  @if (errorMessage()) {
+    <p class="rounded-lg border border-red-700 bg-red-950/30 p-4 text-sm text-red-200">
+      {{ errorMessage() }}
+    </p>
+  }
+
+  @if (loading()) {
+    <p class="rounded-lg border border-dashed border-zinc-700 p-4 text-sm text-zinc-400">
+      Recherche en cours...
+    </p>
+  }
+
+  @if (showEmptyState()) {
+    <p class="rounded-lg border border-dashed border-zinc-700 p-4 text-sm text-zinc-400">
+      Aucun resultat.
+    </p>
+  }
+
+  @if (hasCards()) {
+    <ul class="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-4">
+      @for (card of cards(); track card.id) {
+        <li>
+          <a
+            [routerLink]="['/cards', card.id]"
+            class="block h-full rounded border border-zinc-700 bg-zinc-900 p-3 text-zinc-200 transition hover:-translate-y-0.5 hover:border-amber-400 hover:text-amber-100"
+          >
+            @if (card.imageUrl) {
+              <div class="mb-3 aspect-[63/88] w-full overflow-hidden rounded bg-zinc-950/40">
+                <img
+                  [src]="card.imageUrl"
+                  [alt]="card.name"
+                  class="h-full w-full object-contain"
+                  loading="lazy"
+                />
+              </div>
+            } @else {
+              <div class="mb-3 flex aspect-[63/88] w-full items-center justify-center rounded bg-zinc-800 text-sm text-zinc-400">
+                Image indisponible
+              </div>
+            }
+            <p class="font-semibold">{{ card.name }}</p>
+            <p class="text-sm text-zinc-400">{{ card.setName }}</p>
+          </a>
         </li>
       }
     </ul>
-  </section>
-
-  @if (!searchStarted) {
-    <p class="rounded-lg border border-dashed border-zinc-700 p-4 text-sm text-zinc-400">
-      Aucun résultat pour le moment. C’est normal à cette étape.
-    </p>
   }
 </section>

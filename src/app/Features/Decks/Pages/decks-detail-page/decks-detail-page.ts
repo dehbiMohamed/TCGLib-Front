@@ -1,13 +1,10 @@
-import { Component, inject } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-
-interface DeckDetails {
-  id: string;
-  name: string;
-  format: string;
-  gamePlan: string;
-  keyCards: string[];
-}
+import { catchError, debounceTime, distinctUntilChanged, map, of, switchMap, tap } from 'rxjs';
+import { CardListItem } from '../../../../Models/Card-List-Item';
+import { CardSearchService } from '../../../../Services/card-search-service';
+import { DeckService } from '../../../../Services/deck-service';
 
 @Component({
   selector: 'app-decks-detail-page',
@@ -15,34 +12,93 @@ interface DeckDetails {
   templateUrl: './decks-detail-page.html',
   styleUrl: './decks-detail-page.css',
 })
-export class DecksDetailPage { private readonly route = inject(ActivatedRoute);
+export class DecksDetailPage {
+  private readonly route = inject(ActivatedRoute);
+  private readonly deckService = inject(DeckService);
+  private readonly cardSearchService = inject(CardSearchService);
 
-  readonly deckId = this.route.snapshot.paramMap.get('id') ?? '';
+  readonly deckId = toSignal(this.route.paramMap.pipe(map((params) => params.get('id') ?? '')), {
+    initialValue: '',
+  });
+  readonly deck = computed(() => this.deckService.findDeckById(this.deckId()) ?? null);
+  readonly totalCards = computed(() => {
+    const currentDeck = this.deck();
+    return currentDeck ? this.deckService.getTotalCardCount(currentDeck) : 0;
+  });
+  readonly searchQuery = signal('');
+  readonly searchResults = signal<CardListItem[]>([]);
+  readonly searchLoading = signal(false);
+  readonly searchErrorMessage = signal('');
+  readonly addCardMessage = signal('');
+  readonly searchStarted = computed(() => this.searchQuery().length > 0);
+  readonly showEmptySearchState = computed(
+    () =>
+      this.searchStarted() &&
+      !this.searchLoading() &&
+      !this.searchErrorMessage() &&
+      this.searchResults().length === 0
+  );
 
-  readonly decksById: Record<string, DeckDetails> = {
-    'azorius-control': {
-      id: 'azorius-control',
-      name: 'Azorius Control',
-      format: 'Modern',
-      gamePlan: 'Contrôler la partie puis gagner sur la durée.',
-      keyCards: ['Counterspell', 'Supreme Verdict', 'Teferi'],
-    },
-    'mono-red-burn': {
-      id: 'mono-red-burn',
-      name: 'Mono Red Burn',
-      format: 'Pioneer',
-      gamePlan: 'Mettre la pression très vite avec des dégâts directs.',
-      keyCards: ['Lightning Strike', 'Monastery Swiftspear', 'Play with Fire'],
-    },
-    'golgari-midrange': {
-      id: 'golgari-midrange',
-      name: 'Golgari Midrange',
-      format: 'Standard',
-      gamePlan: 'Jouer des menaces efficaces et gérer le board adverse.',
-      keyCards: ['Cut Down', 'Glissa Sunslayer', "Sheoldred, the Apocalypse"],
-    },
-  };
+  constructor() {
+    toObservable(this.searchQuery)
+      .pipe(
+        debounceTime(150),
+        distinctUntilChanged(),
+        tap((query) => {
+          this.searchErrorMessage.set('');
+          this.addCardMessage.set('');
+          this.searchLoading.set(query.length > 0);
 
-  readonly deck = this.decksById[this.deckId];
-  
+          if (!query) {
+            this.searchResults.set([]);
+            this.searchLoading.set(false);
+          }
+        }),
+        switchMap((query) => {
+          if (!query) {
+            return of([]);
+          }
+
+          return this.cardSearchService.searchCards(query).pipe(
+            catchError(() => {
+              this.searchErrorMessage.set('Erreur pendant la recherche de cartes.');
+              return of([]);
+            })
+          );
+        }),
+        takeUntilDestroyed()
+      )
+      .subscribe((cards) => {
+        this.searchResults.set(cards);
+        this.searchLoading.set(false);
+      });
+  }
+
+  removeCard(cardId: string): void {
+    const currentDeck = this.deck();
+    if (!currentDeck) {
+      return;
+    }
+
+    this.deckService.removeCardFromDeck(currentDeck.id, cardId);
+  }
+
+  onSearchQueryChange(query: string): void {
+    this.searchQuery.set(query.trim());
+  }
+
+  addCard(card: CardListItem): void {
+    const currentDeck = this.deck();
+    if (!currentDeck) {
+      return;
+    }
+
+    this.deckService.addCardToDeck(currentDeck.id, {
+      id: card.id,
+      name: card.name,
+      imageUrl: card.imageUrl,
+    });
+
+    this.addCardMessage.set(`${card.name} ajoutee au deck ${currentDeck.name}.`);
+  }
 }
