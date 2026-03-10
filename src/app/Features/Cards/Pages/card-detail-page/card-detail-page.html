@@ -80,18 +80,29 @@
               @for (deck of decks(); track deck.id) {
                 <button
                   type="button"
-                  class="rounded-lg border border-zinc-700 px-3 py-2 text-xs text-zinc-200 transition hover:border-amber-400 hover:text-amber-300"
+                  class="rounded-lg border border-zinc-700 px-3 py-2 text-xs text-zinc-200 transition hover:border-amber-400 hover:text-amber-300 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-zinc-700 disabled:hover:text-zinc-200"
+                  [disabled]="!canAddCardToDeck(deck.id)"
                   (click)="addCardToDeck(deck.id)"
                 >
-                  Ajouter a {{ deck.name }}
+                  @if (!canAddCardToDeck(deck.id)) {
+                    Deja dans {{ deck.name }}
+                  } @else {
+                    Ajouter a {{ deck.name }}
+                  }
                 </button>
               }
             </div>
 
             @if (addToDeckMessage()) {
-              <p class="mt-3 rounded-lg border border-emerald-700 bg-emerald-950/30 p-3 text-xs text-emerald-200">
-                {{ addToDeckMessage() }}
-              </p>
+              @if (addToDeckMessageTone() === 'success') {
+                <p class="mt-3 rounded-lg border border-emerald-700 bg-emerald-950/30 p-3 text-xs text-emerald-200">
+                  {{ addToDeckMessage() }}
+                </p>
+              } @else {
+                <p class="mt-3 rounded-lg border border-amber-700 bg-amber-950/30 p-3 text-xs text-amber-200">
+                  {{ addToDeckMessage() }}
+                </p>
+              }
             }
           } @else {
             <p class="mt-3 text-sm text-zinc-400">

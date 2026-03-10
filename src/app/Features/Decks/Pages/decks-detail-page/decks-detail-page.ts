@@ -3,6 +3,7 @@ import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-i
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { catchError, debounceTime, distinctUntilChanged, map, of, switchMap, tap } from 'rxjs';
 import { CardListItem } from '../../../../Models/Card-List-Item';
+import { DeckCardEntry } from '../../../../Models/Deck';
 import { CardSearchService } from '../../../../Services/card-search-service';
 import { DeckService } from '../../../../Services/deck-service';
 
@@ -25,12 +26,21 @@ export class DecksDetailPage {
     const currentDeck = this.deck();
     return currentDeck ? this.deckService.getTotalCardCount(currentDeck) : 0;
   });
+  readonly validationSummary = computed(() => {
+    const currentDeck = this.deck();
+    return currentDeck ? this.deckService.getDeckValidationSummary(currentDeck) : null;
+  });
   readonly searchQuery = signal('');
   readonly searchResults = signal<CardListItem[]>([]);
   readonly searchLoading = signal(false);
   readonly searchErrorMessage = signal('');
   readonly addCardMessage = signal('');
+  readonly addCardMessageTone = signal<'success' | 'warning'>('success');
   readonly searchStarted = computed(() => this.searchQuery().length > 0);
+  readonly isCommanderDeck = computed(() => {
+    const currentDeck = this.deck();
+    return currentDeck ? currentDeck.format.trim().toLowerCase() === 'commander' : false;
+  });
   readonly showEmptySearchState = computed(
     () =>
       this.searchStarted() &&
@@ -47,6 +57,7 @@ export class DecksDetailPage {
         tap((query) => {
           this.searchErrorMessage.set('');
           this.addCardMessage.set('');
+          this.addCardMessageTone.set('success');
           this.searchLoading.set(query.length > 0);
 
           if (!query) {
@@ -74,7 +85,25 @@ export class DecksDetailPage {
       });
   }
 
-  removeCard(cardId: string): void {
+  increaseCardQuantity(card: DeckCardEntry): void {
+    const currentDeck = this.deck();
+    if (!currentDeck) {
+      return;
+    }
+
+    const addResult = this.deckService.addCardToDeck(currentDeck.id, {
+      id: card.cardId,
+      name: card.name,
+      imageUrl: card.imageUrl,
+    });
+
+    if (!addResult.added && addResult.reason === 'commander_singleton') {
+      this.addCardMessageTone.set('warning');
+      this.addCardMessage.set('En Commander, une carte ne peut etre presente qu une seule fois.');
+    }
+  }
+
+  decreaseCardQuantity(cardId: string): void {
     const currentDeck = this.deck();
     if (!currentDeck) {
       return;
@@ -93,12 +122,28 @@ export class DecksDetailPage {
       return;
     }
 
-    this.deckService.addCardToDeck(currentDeck.id, {
+    const addResult = this.deckService.addCardToDeck(currentDeck.id, {
       id: card.id,
       name: card.name,
       imageUrl: card.imageUrl,
     });
 
-    this.addCardMessage.set(`${card.name} ajoutee au deck ${currentDeck.name}.`);
+    if (addResult.added) {
+      this.addCardMessageTone.set('success');
+      this.addCardMessage.set(`${card.name} ajoutee au deck ${currentDeck.name}.`);
+      return;
+    }
+
+    if (addResult.reason === 'commander_singleton') {
+      this.addCardMessageTone.set('warning');
+      this.addCardMessage.set(
+        `${card.name} est deja dans ce deck Commander. Une seule copie est autorisee dans cette version simple du projet.`
+      );
+    }
+  }
+
+  canAddCard(cardId: string): boolean {
+    const currentDeck = this.deck();
+    return currentDeck ? this.deckService.canAddCardToDeck(currentDeck.id, cardId) : false;
   }
 }

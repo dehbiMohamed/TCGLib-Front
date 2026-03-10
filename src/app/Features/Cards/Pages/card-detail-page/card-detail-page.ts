@@ -24,6 +24,7 @@ export class CardDetailPage {
   readonly loading = signal(true);
   readonly errorMessage = signal('');
   readonly addToDeckMessage = signal('');
+  readonly addToDeckMessageTone = signal<'success' | 'warning'>('success');
   readonly decks = this.deckService.decks;
   readonly hasDecks = computed(() => this.decks().length > 0);
 
@@ -35,6 +36,7 @@ export class CardDetailPage {
           this.card.set(null);
           this.errorMessage.set('');
           this.addToDeckMessage.set('');
+          this.addToDeckMessageTone.set('success');
 
           if (!cardId) {
             this.loading.set(false);
@@ -70,13 +72,30 @@ export class CardDetailPage {
       return;
     }
 
-    this.deckService.addCardToDeck(deckId, {
+    const addResult = this.deckService.addCardToDeck(deckId, {
       id: currentCard.id,
       name: currentCard.name,
       imageUrl: currentCard.imageUrl,
     });
 
     const targetDeck = this.deckService.findDeckById(deckId);
-    this.addToDeckMessage.set(`${currentCard.name} ajoutee a ${targetDeck?.name ?? 'ce deck'}.`);
+
+    if (addResult.added) {
+      this.addToDeckMessageTone.set('success');
+      this.addToDeckMessage.set(`${currentCard.name} ajoutee a ${targetDeck?.name ?? 'ce deck'}.`);
+      return;
+    }
+
+    if (addResult.reason === 'commander_singleton') {
+      this.addToDeckMessageTone.set('warning');
+      this.addToDeckMessage.set(
+        `${currentCard.name} est deja dans ${targetDeck?.name ?? 'ce deck Commander'}. Une seule copie est autorisee dans cette version simple du projet.`
+      );
+    }
+  }
+
+  canAddCardToDeck(deckId: string): boolean {
+    const currentCard = this.card();
+    return currentCard ? this.deckService.canAddCardToDeck(deckId, currentCard.id) : false;
   }
 }

@@ -1,6 +1,6 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
-import { Deck } from '../../../../Models/Deck';
+import { Deck, DeckValidationSummary } from '../../../../Models/Deck';
 import { DeckService } from '../../../../Services/deck-service';
 
 @Component({
@@ -32,5 +32,9 @@ export class DecksPage {
 
   getCardCount(deck: Deck): number {
     return this.deckService.getTotalCardCount(deck);
+  }
+
+  getValidationSummary(deck: Deck): DeckValidationSummary {
+    return this.deckService.getDeckValidationSummary(deck);
   }
 }

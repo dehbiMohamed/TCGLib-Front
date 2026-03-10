@@ -1,6 +1,6 @@
 import { isPlatformBrowser } from '@angular/common';
 import { inject, Injectable, PLATFORM_ID, signal } from '@angular/core';
-import { Deck, DeckCardEntry } from '../Models/Deck';
+import { AddCardToDeckResult, Deck, DeckCardEntry, DeckValidationSummary } from '../Models/Deck';
 
 @Injectable({
   providedIn: 'root',
@@ -36,7 +36,12 @@ export class DeckService {
     return this.decksState().find((deck) => deck.id === deckId);
   }
 
-  addCardToDeck(deckId: string, card: { id: string; name: string; imageUrl: string }): void {
+  addCardToDeck(deckId: string, card: { id: string; name: string; imageUrl: string }): AddCardToDeckResult {
+    let addResult: AddCardToDeckResult = {
+      added: false,
+      reason: 'deck_not_found',
+    };
+
     this.updateDecks((decks) =>
       decks.map((deck) => {
         if (deck.id !== deckId) {
@@ -44,8 +49,23 @@ export class DeckService {
         }
 
         const existingCard = deck.cards.find((entry) => entry.cardId === card.id);
+        const commanderDuplicateBlocked = this.isCommanderDeck(deck) && existingCard;
+
+        if (commanderDuplicateBlocked) {
+          addResult = {
+            added: false,
+            reason: 'commander_singleton',
+          };
+
+          return deck;
+        }
 
         if (existingCard) {
+          addResult = {
+            added: true,
+            reason: 'added',
+          };
+
           return {
             ...deck,
             cards: deck.cards.map((entry) =>
@@ -61,12 +81,19 @@ export class DeckService {
           quantity: 1,
         };
 
+        addResult = {
+          added: true,
+          reason: 'added',
+        };
+
         return {
           ...deck,
           cards: [...deck.cards, newCard],
         };
       })
     );
+
+    return addResult;
   }
 
   removeCardFromDeck(deckId: string, cardId: string): void {
@@ -92,10 +119,103 @@ export class DeckService {
     return deck.cards.reduce((total, card) => total + card.quantity, 0);
   }
 
+  canAddCardToDeck(deckId: string, cardId: string): boolean {
+    const deck = this.findDeckById(deckId);
+
+    if (!deck) {
+      return false;
+    }
+
+    if (!this.isCommanderDeck(deck)) {
+      return true;
+    }
+
+    return !deck.cards.some((entry) => entry.cardId === cardId);
+  }
+
+  getDeckValidationSummary(deck: Deck): DeckValidationSummary {
+    const totalCards = this.getTotalCardCount(deck);
+    const duplicatedCards = deck.cards.filter((entry) => entry.quantity > 1);
+
+    if (this.isCommanderDeck(deck)) {
+      if (duplicatedCards.length > 0) {
+        return {
+          totalCards,
+          targetCardCount: 100,
+          ruleLabel: '100 cartes exactes, sans doublons',
+          statusLabel: 'Doublons interdits',
+          statusTone: 'danger',
+          detailMessage: `${duplicatedCards.length} carte(s) sont presentes en plusieurs exemplaires.`,
+          isValid: false,
+        };
+      }
+
+      if (totalCards === 100) {
+        return {
+          totalCards,
+          targetCardCount: 100,
+          ruleLabel: '100 cartes exactes, sans doublons',
+          statusLabel: 'Valide',
+          statusTone: 'success',
+          detailMessage: 'Ton deck Commander est a la bonne taille.',
+          isValid: true,
+        };
+      }
+
+      if (totalCards < 100) {
+        return {
+          totalCards,
+          targetCardCount: 100,
+          ruleLabel: '100 cartes exactes, sans doublons',
+          statusLabel: 'Incomplet',
+          statusTone: 'warning',
+          detailMessage: `${100 - totalCards} cartes manquantes pour atteindre 100.`,
+          isValid: false,
+        };
+      }
+
+      return {
+        totalCards,
+        targetCardCount: 100,
+        ruleLabel: '100 cartes exactes, sans doublons',
+        statusLabel: 'Trop de cartes',
+        statusTone: 'danger',
+        detailMessage: `${totalCards - 100} cartes en trop pour rester a 100.`,
+        isValid: false,
+      };
+    }
+
+    if (totalCards >= 60) {
+      return {
+        totalCards,
+        targetCardCount: 60,
+        ruleLabel: '60 cartes minimum',
+        statusLabel: 'Valide',
+        statusTone: 'success',
+        detailMessage: 'Le minimum de cartes pour ce format est atteint.',
+        isValid: true,
+      };
+    }
+
+    return {
+      totalCards,
+      targetCardCount: 60,
+      ruleLabel: '60 cartes minimum',
+      statusLabel: 'Incomplet',
+      statusTone: 'warning',
+      detailMessage: `${60 - totalCards} cartes manquantes pour atteindre le minimum.`,
+      isValid: false,
+    };
+  }
+
   private updateDecks(updater: (decks: Deck[]) => Deck[]): void {
     const nextDecks = updater(this.decksState());
     this.decksState.set(nextDecks);
     this.persistDecks(nextDecks);
+  }
+
+  private isCommanderDeck(deck: Deck): boolean {
+    return deck.format.trim().toLowerCase() === 'commander';
   }
 
   private loadDecks(): Deck[] {
