@@ -144,6 +144,19 @@ describe('DecksDetailPage', () => {
     expect(component).toBeTruthy();
   });
 
+  it('should hide deck settings by default and show them after clicking modify', async () => {
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(fixture.nativeElement.textContent).not.toContain('Parametres du deck');
+
+    component.toggleDeckSettings();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(fixture.nativeElement.textContent).toContain('Parametres du deck');
+  });
+
   it('should delete the current deck and navigate back to the list', () => {
     vi.spyOn(globalThis, 'confirm').mockReturnValue(true);
     const navigateSpy = vi.spyOn(router, 'navigate').mockResolvedValue(true);
@@ -154,18 +167,25 @@ describe('DecksDetailPage', () => {
     expect(navigateSpy).toHaveBeenCalledWith(['/decks']);
   });
 
-  it('should update the deck name and format', () => {
+  it('should update the deck name and format and keep the confirmation visible', async () => {
+    component.toggleDeckSettings();
     component.onDeckNameChange('Boros Burn');
     component.onDeckFormatChange('Commander');
     expect(component.previewFormatRule()?.ruleLabel).toBe('100 cartes exactes, sans doublons');
 
     component.updateDeckInfo(component.draftDeckName(), component.draftDeckFormat());
+    fixture.detectChanges();
+    await fixture.whenStable();
 
     expect(deckServiceStub.updateDeck).toHaveBeenCalledWith(mockDeck.id, {
       name: 'Boros Burn',
       format: 'Commander',
     });
     expect(component.deckSettingsMessage()).toBe(
+      'Parametres du deck Boros Burn mis a jour. Nouvelle regle: 100 cartes exactes, sans doublons.'
+    );
+    expect(component.showDeckSettings()).toBe(false);
+    expect(fixture.nativeElement.textContent).toContain(
       'Parametres du deck Boros Burn mis a jour. Nouvelle regle: 100 cartes exactes, sans doublons.'
     );
   });
@@ -230,5 +250,25 @@ describe('DecksDetailPage', () => {
 
     expect(cardLinks).toContain('/cards/lightning-bolt');
     expect(cardLinks).toContain('/cards/shock');
+  });
+
+  it('should open the settings form with the current deck format selected', async () => {
+    deckServiceStub.decks.set([
+      {
+        ...mockDeck,
+        format: 'Commander',
+      },
+    ]);
+
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    component.toggleDeckSettings();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const formatSelect = fixture.nativeElement.querySelector('select') as HTMLSelectElement | null;
+
+    expect(formatSelect?.value).toBe('Commander');
   });
 });

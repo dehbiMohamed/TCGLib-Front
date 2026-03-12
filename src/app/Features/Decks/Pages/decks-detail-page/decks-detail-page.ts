@@ -40,6 +40,7 @@ export class DecksDetailPage {
   readonly addCardMessageTone = signal<'success' | 'warning'>('success');
   readonly deckSettingsMessage = signal('');
   readonly deckSettingsMessageTone = signal<'success' | 'warning'>('success');
+  readonly showDeckSettings = signal(false);
   readonly draftDeckName = signal('');
   readonly draftDeckFormat = signal('');
   readonly searchStarted = computed(() => this.searchQuery().length > 0);
@@ -151,6 +152,11 @@ export class DecksDetailPage {
     this.deckSettingsMessage.set('');
   }
 
+  toggleDeckSettings(): void {
+    this.showDeckSettings.update((currentValue) => !currentValue);
+    this.deckSettingsMessage.set('');
+  }
+
   increaseCardQuantity(card: DeckCardEntry): void {
     const currentDeck = this.deck();
     if (!currentDeck) {
@@ -231,6 +237,7 @@ export class DecksDetailPage {
     this.deckSettingsMessage.set(
       `Parametres du deck ${updatedDeck.name} mis a jour. Nouvelle regle: ${this.deckService.getDeckFormatRule(updatedDeck.format).ruleLabel}.`
     );
+    this.showDeckSettings.set(false);
   }
 
   deleteCurrentDeck(): void {
