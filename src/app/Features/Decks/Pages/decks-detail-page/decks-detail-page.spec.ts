@@ -215,7 +215,7 @@ describe('DecksDetailPage', () => {
     expect(component.draftDeckFormat()).toBe('Commander');
   });
 
-  it('should show card detail links for search results and deck cards', async () => {
+  it('should show card detail links for search results and deck cards with deck return context', async () => {
     component.searchResults.set([
       {
         id: 'lightning-bolt',
@@ -248,8 +248,8 @@ describe('DecksDetailPage', () => {
       .map((link: HTMLAnchorElement) => link.getAttribute('href') ?? '')
       .filter((href) => href.includes('/cards/'));
 
-    expect(cardLinks).toContain('/cards/lightning-bolt');
-    expect(cardLinks).toContain('/cards/shock');
+    expect(cardLinks).toContain('/cards/lightning-bolt?fromDeckId=test-deck');
+    expect(cardLinks).toContain('/cards/shock?fromDeckId=test-deck');
   });
 
   it('should open the settings form with the current deck format selected', async () => {

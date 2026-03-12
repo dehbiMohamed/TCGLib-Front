@@ -3,6 +3,8 @@ import { Router, RouterLink } from '@angular/router';
 import { Deck, DeckValidationSummary } from '../../../../Models/Deck';
 import { DeckService } from '../../../../Services/deck-service';
 
+type DeckSortOption = 'recent' | 'oldest' | 'name';
+
 @Component({
   selector: 'app-decks-page',
   imports: [RouterLink],
@@ -16,8 +18,28 @@ export class DecksPage {
   readonly decks = this.deckService.decks;
   readonly errorMessage = signal('');
   readonly successMessage = signal('');
-  readonly hasDecks = computed(() => this.decks().length > 0);
+  readonly selectedSort = signal<DeckSortOption>('recent');
   readonly formatOptions = ['Standard', 'Modern', 'Pioneer', 'Commander'];
+  readonly sortOptions: Array<{ value: DeckSortOption; label: string }> = [
+    { value: 'recent', label: 'Plus recents' },
+    { value: 'oldest', label: 'Plus anciens' },
+    { value: 'name', label: 'Nom A-Z' },
+  ];
+  readonly sortedDecks = computed(() => {
+    const decks = [...this.decks()];
+    const selectedSort = this.selectedSort();
+
+    if (selectedSort === 'oldest') {
+      return decks.sort((leftDeck, rightDeck) => leftDeck.createdAt.localeCompare(rightDeck.createdAt));
+    }
+
+    if (selectedSort === 'name') {
+      return decks.sort((leftDeck, rightDeck) => leftDeck.name.localeCompare(rightDeck.name));
+    }
+
+    return decks.sort((leftDeck, rightDeck) => rightDeck.createdAt.localeCompare(leftDeck.createdAt));
+  });
+  readonly hasDecks = computed(() => this.sortedDecks().length > 0);
 
   createDeck(name: string, format: string): void {
     this.successMessage.set('');
@@ -30,6 +52,12 @@ export class DecksPage {
 
     this.errorMessage.set('');
     void this.router.navigate(['/decks', newDeck.id]);
+  }
+
+  onSortChange(sort: string): void {
+    if (sort === 'recent' || sort === 'oldest' || sort === 'name') {
+      this.selectedSort.set(sort);
+    }
   }
 
   getCardCount(deck: Deck): number {

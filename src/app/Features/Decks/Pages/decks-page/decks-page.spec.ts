@@ -25,6 +25,13 @@ describe('DecksPage', () => {
     createdAt: '2026-03-11T00:00:00.000Z',
     cards: [],
   };
+  const secondDeck: Deck = {
+    id: 'boros-burn-1',
+    name: 'Boros Burn',
+    format: 'Standard',
+    createdAt: '2026-03-12T00:00:00.000Z',
+    cards: [],
+  };
 
   const mockSummary: DeckValidationSummary = {
     totalCards: 0,
@@ -38,7 +45,7 @@ describe('DecksPage', () => {
 
   beforeEach(async () => {
     deckServiceStub = {
-      decks: signal<Deck[]>([mockDeck]),
+      decks: signal<Deck[]>([mockDeck, secondDeck]),
       createDeck: vi.fn().mockReturnValue(mockDeck),
       removeDeck: vi.fn().mockReturnValue(true),
       getTotalCardCount: vi.fn().mockReturnValue(0),
@@ -76,5 +83,21 @@ describe('DecksPage', () => {
 
     expect(deckServiceStub.removeDeck).toHaveBeenCalledWith(mockDeck.id);
     expect(component.successMessage()).toBe('Le deck Azorius Control a ete supprime.');
+  });
+
+  it('should sort decks by recent by default', () => {
+    expect(component.sortedDecks().map((deck) => deck.name)).toEqual(['Boros Burn', 'Azorius Control']);
+  });
+
+  it('should sort decks by name', () => {
+    component.onSortChange('name');
+
+    expect(component.sortedDecks().map((deck) => deck.name)).toEqual(['Azorius Control', 'Boros Burn']);
+  });
+
+  it('should sort decks by oldest first', () => {
+    component.onSortChange('oldest');
+
+    expect(component.sortedDecks().map((deck) => deck.name)).toEqual(['Azorius Control', 'Boros Burn']);
   });
 });

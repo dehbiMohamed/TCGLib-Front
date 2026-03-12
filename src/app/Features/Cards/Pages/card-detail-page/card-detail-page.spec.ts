@@ -13,6 +13,7 @@ describe('CardDetailPage', () => {
   let fixture: ComponentFixture<CardDetailPage>;
   let component: CardDetailPage;
   let routeParamMap$: BehaviorSubject<ParamMap>;
+  let routeQueryParamMap$: BehaviorSubject<ParamMap>;
   let cardSearchServiceStub: {
     getCardById: ReturnType<typeof vi.fn>;
   };
@@ -53,6 +54,7 @@ describe('CardDetailPage', () => {
 
   beforeEach(async () => {
     routeParamMap$ = new BehaviorSubject(convertToParamMap({ id: mockCard.id }));
+    routeQueryParamMap$ = new BehaviorSubject(convertToParamMap({}));
     cardSearchServiceStub = {
       getCardById: vi.fn(),
     };
@@ -71,6 +73,7 @@ describe('CardDetailPage', () => {
           provide: ActivatedRoute,
           useValue: {
             paramMap: routeParamMap$.asObservable(),
+            queryParamMap: routeQueryParamMap$.asObservable(),
           },
         },
         {
@@ -106,5 +109,17 @@ describe('CardDetailPage', () => {
     expect(component.loading()).toBe(false);
     expect(component.errorMessage()).toBe('Carte introuvable ou erreur lors du chargement.');
     expect(fixture.nativeElement.textContent).toContain('Carte introuvable ou erreur lors du chargement.');
+  });
+
+  it('should return to the deck when the card is opened from a deck', async () => {
+    routeQueryParamMap$.next(convertToParamMap({ fromDeckId: 'test-deck' }));
+    cardSearchServiceStub.getCardById.mockReturnValue(of(mockCard));
+
+    await createComponent();
+
+    const backLink = fixture.nativeElement.querySelector('a') as HTMLAnchorElement | null;
+
+    expect(component.backLabel()).toBe('Retour au deck');
+    expect(backLink?.getAttribute('href')).toBe('/decks/test-deck');
   });
 });

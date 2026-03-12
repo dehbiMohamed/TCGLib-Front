@@ -33,8 +33,32 @@
   }
 
   @if (hasCards()) {
+    <section class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-zinc-800 bg-zinc-900 p-4">
+      <div>
+        <h2 class="text-sm font-semibold text-zinc-100">Organisation des cartes</h2>
+        <p class="mt-1 text-sm text-zinc-400">Trie les resultats pour comparer plus facilement les cartes trouvees.</p>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <label for="cardSort" class="text-sm text-zinc-300">Trier par</label>
+        <select
+          #cardSortInput
+          id="cardSort"
+          [value]="selectedSort()"
+          class="rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100"
+          (change)="onSortChange(cardSortInput.value)"
+        >
+          @for (sortOption of sortOptions; track sortOption.value) {
+            <option [value]="sortOption.value" [selected]="sortOption.value === selectedSort()">
+              {{ sortOption.label }}
+            </option>
+          }
+        </select>
+      </div>
+    </section>
+
     <ul class="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-4">
-      @for (card of cards(); track card.id) {
+      @for (card of sortedCards(); track card.id) {
         <li>
           <a
             [routerLink]="['/cards', card.id]"

@@ -5,6 +5,8 @@ import { catchError, debounceTime, distinctUntilChanged, of, switchMap, tap } fr
 import { CardListItem } from '../../../../Models/Card-List-Item';
 import { CardSearchService } from '../../../../Services/card-search-service';
 
+type CardSortOption = 'name_asc' | 'name_desc' | 'set';
+
 @Component({
   selector: 'app-cards-page',
   imports: [RouterLink],
@@ -18,11 +20,34 @@ export class CardsPage {
   readonly cards = signal<CardListItem[]>([]);
   readonly loading = signal(false);
   readonly errorMessage = signal('');
+  readonly selectedSort = signal<CardSortOption>('name_asc');
+  readonly sortOptions: Array<{ value: CardSortOption; label: string }> = [
+    { value: 'name_asc', label: 'Nom A-Z' },
+    { value: 'name_desc', label: 'Nom Z-A' },
+    { value: 'set', label: 'Edition A-Z' },
+  ];
   readonly searchStarted = computed(() => this.query().length > 0);
   readonly showEmptyState = computed(
     () => this.searchStarted() && !this.loading() && !this.errorMessage() && this.cards().length === 0
   );
-  readonly hasCards = computed(() => !this.loading() && this.cards().length > 0);
+  readonly sortedCards = computed(() => {
+    const cards = [...this.cards()];
+    const selectedSort = this.selectedSort();
+
+    if (selectedSort === 'name_desc') {
+      return cards.sort((leftCard, rightCard) => rightCard.name.localeCompare(leftCard.name));
+    }
+
+    if (selectedSort === 'set') {
+      return cards.sort((leftCard, rightCard) => {
+        const setOrder = leftCard.setName.localeCompare(rightCard.setName);
+        return setOrder !== 0 ? setOrder : leftCard.name.localeCompare(rightCard.name);
+      });
+    }
+
+    return cards.sort((leftCard, rightCard) => leftCard.name.localeCompare(rightCard.name));
+  });
+  readonly hasCards = computed(() => !this.loading() && this.sortedCards().length > 0);
 
   constructor() {
     toObservable(this.query)
@@ -60,5 +85,11 @@ export class CardsPage {
 
   onQueryChange(query: string): void {
     this.query.set(query.trim());
+  }
+
+  onSortChange(sort: string): void {
+    if (sort === 'name_asc' || sort === 'name_desc' || sort === 'set') {
+      this.selectedSort.set(sort);
+    }
   }
 }

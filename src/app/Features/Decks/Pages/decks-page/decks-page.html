@@ -49,8 +49,32 @@
   </section>
 
   @if (hasDecks()) {
+    <section class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-zinc-800 bg-zinc-900 p-4">
+      <div>
+        <h2 class="text-sm font-semibold text-zinc-100">Organisation des decks</h2>
+        <p class="mt-1 text-sm text-zinc-400">Trie la liste pour presenter plus facilement ton travail.</p>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <label for="deckSort" class="text-sm text-zinc-300">Trier par</label>
+        <select
+          #deckSortInput
+          id="deckSort"
+          [value]="selectedSort()"
+          class="rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100"
+          (change)="onSortChange(deckSortInput.value)"
+        >
+          @for (sortOption of sortOptions; track sortOption.value) {
+            <option [value]="sortOption.value" [selected]="sortOption.value === selectedSort()">
+              {{ sortOption.label }}
+            </option>
+          }
+        </select>
+      </div>
+    </section>
+
     <div class="grid gap-4 md:grid-cols-2">
-      @for (deck of decks(); track deck.id) {
+      @for (deck of sortedDecks(); track deck.id) {
         <article class="rounded-xl border border-zinc-800 bg-zinc-900 p-5">
           <div class="flex items-start justify-between gap-3">
             <div>

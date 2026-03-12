@@ -20,6 +20,9 @@ export class CardDetailPage {
   readonly cardId = toSignal(this.route.paramMap.pipe(map((params) => params.get('id') ?? '')), {
     initialValue: '',
   });
+  readonly returnDeckId = toSignal(this.route.queryParamMap.pipe(map((params) => params.get('fromDeckId') ?? '')), {
+    initialValue: '',
+  });
   readonly card = signal<CardDetails | null>(null);
   readonly loading = signal(true);
   readonly errorMessage = signal('');
@@ -27,6 +30,8 @@ export class CardDetailPage {
   readonly addToDeckMessageTone = signal<'success' | 'warning'>('success');
   readonly decks = this.deckService.decks;
   readonly hasDecks = computed(() => this.decks().length > 0);
+  readonly backLink = computed(() => (this.returnDeckId() ? ['/decks', this.returnDeckId()] : ['/cards']));
+  readonly backLabel = computed(() => (this.returnDeckId() ? 'Retour au deck' : 'Retour aux cartes'));
   readonly colorLabel = computed(() => {
     const currentCard = this.card();
     if (!currentCard) {
