@@ -1,9 +1,9 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, effect, inject, signal } from '@angular/core';
 import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { catchError, debounceTime, distinctUntilChanged, map, of, switchMap, tap } from 'rxjs';
 import { CardListItem } from '../../../../Models/Card-List-Item';
-import { DeckCardEntry } from '../../../../Models/Deck';
+import { Deck, DeckCardEntry } from '../../../../Models/Deck';
 import { CardSearchService } from '../../../../Services/card-search-service';
 import { DeckService } from '../../../../Services/deck-service';
 
@@ -15,8 +15,10 @@ import { DeckService } from '../../../../Services/deck-service';
 })
 export class DecksDetailPage {
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   private readonly deckService = inject(DeckService);
   private readonly cardSearchService = inject(CardSearchService);
+  private lastSyncedDeckSettingsKey = '';
 
   readonly deckId = toSignal(this.route.paramMap.pipe(map((params) => params.get('id') ?? '')), {
     initialValue: '',
@@ -36,7 +38,43 @@ export class DecksDetailPage {
   readonly searchErrorMessage = signal('');
   readonly addCardMessage = signal('');
   readonly addCardMessageTone = signal<'success' | 'warning'>('success');
+  readonly deckSettingsMessage = signal('');
+  readonly deckSettingsMessageTone = signal<'success' | 'warning'>('success');
+  readonly draftDeckName = signal('');
+  readonly draftDeckFormat = signal('');
   readonly searchStarted = computed(() => this.searchQuery().length > 0);
+  readonly formatOptions = ['Standard', 'Modern', 'Pioneer', 'Commander'];
+  readonly previewDeck = computed<Deck | null>(() => {
+    const currentDeck = this.deck();
+    if (!currentDeck) {
+      return null;
+    }
+
+    return {
+      ...currentDeck,
+      name: this.draftDeckName().trim() || currentDeck.name,
+      format: this.draftDeckFormat().trim() || currentDeck.format,
+    };
+  });
+  readonly previewFormatRule = computed(() => {
+    const currentDeck = this.previewDeck();
+    return currentDeck ? this.deckService.getDeckFormatRule(currentDeck.format) : null;
+  });
+  readonly previewValidationSummary = computed(() => {
+    const currentDeck = this.previewDeck();
+    return currentDeck ? this.deckService.getDeckValidationSummary(currentDeck) : null;
+  });
+  readonly hasPendingDeckChanges = computed(() => {
+    const currentDeck = this.deck();
+    if (!currentDeck) {
+      return false;
+    }
+
+    return (
+      this.draftDeckName().trim() !== currentDeck.name ||
+      this.draftDeckFormat().trim() !== currentDeck.format
+    );
+  });
   readonly isCommanderDeck = computed(() => {
     const currentDeck = this.deck();
     return currentDeck ? currentDeck.format.trim().toLowerCase() === 'commander' : false;
@@ -50,6 +88,24 @@ export class DecksDetailPage {
   );
 
   constructor() {
+    effect(() => {
+      const currentDeck = this.deck();
+      if (!currentDeck) {
+        this.lastSyncedDeckSettingsKey = '';
+        return;
+      }
+
+      const deckSettingsKey = `${currentDeck.id}|${currentDeck.name}|${currentDeck.format}`;
+
+      if (deckSettingsKey === this.lastSyncedDeckSettingsKey) {
+        return;
+      }
+
+      this.lastSyncedDeckSettingsKey = deckSettingsKey;
+      this.draftDeckName.set(currentDeck.name);
+      this.draftDeckFormat.set(currentDeck.format);
+    });
+
     toObservable(this.searchQuery)
       .pipe(
         debounceTime(150),
@@ -83,6 +139,16 @@ export class DecksDetailPage {
         this.searchResults.set(cards);
         this.searchLoading.set(false);
       });
+  }
+
+  onDeckNameChange(name: string): void {
+    this.draftDeckName.set(name);
+    this.deckSettingsMessage.set('');
+  }
+
+  onDeckFormatChange(format: string): void {
+    this.draftDeckFormat.set(format);
+    this.deckSettingsMessage.set('');
   }
 
   increaseCardQuantity(card: DeckCardEntry): void {
@@ -145,5 +211,46 @@ export class DecksDetailPage {
   canAddCard(cardId: string): boolean {
     const currentDeck = this.deck();
     return currentDeck ? this.deckService.canAddCardToDeck(currentDeck.id, cardId) : false;
+  }
+
+  updateDeckInfo(name: string, format: string): void {
+    const currentDeck = this.deck();
+    if (!currentDeck) {
+      return;
+    }
+
+    const updatedDeck = this.deckService.updateDeck(currentDeck.id, { name, format });
+
+    if (!updatedDeck) {
+      this.deckSettingsMessageTone.set('warning');
+      this.deckSettingsMessage.set('Entre un nom de deck et un format valides.');
+      return;
+    }
+
+    this.deckSettingsMessageTone.set('success');
+    this.deckSettingsMessage.set(
+      `Parametres du deck ${updatedDeck.name} mis a jour. Nouvelle regle: ${this.deckService.getDeckFormatRule(updatedDeck.format).ruleLabel}.`
+    );
+  }
+
+  deleteCurrentDeck(): void {
+    const currentDeck = this.deck();
+    if (!currentDeck) {
+      return;
+    }
+
+    const shouldDelete =
+      typeof globalThis.confirm !== 'function' ||
+      globalThis.confirm(`Supprimer le deck "${currentDeck.name}" ?`);
+
+    if (!shouldDelete) {
+      return;
+    }
+
+    const removed = this.deckService.removeDeck(currentDeck.id);
+
+    if (removed) {
+      void this.router.navigate(['/decks']);
+    }
   }
 }

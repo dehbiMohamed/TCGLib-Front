@@ -13,6 +13,14 @@ export interface Deck {
   cards: DeckCardEntry[];
 }
 
+export interface DeckFormatRule {
+  targetCardCount: number;
+  cardCountMode: 'minimum' | 'exact';
+  allowDuplicates: boolean;
+  ruleLabel: string;
+  helperText: string;
+}
+
 export interface DeckValidationSummary {
   totalCards: number;
   targetCardCount: number;

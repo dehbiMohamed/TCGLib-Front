@@ -43,6 +43,38 @@
           <p class="text-zinc-300">{{ currentCard.typeLine }}</p>
         </header>
 
+        @if (hasCardStats()) {
+          <section class="grid gap-3 sm:grid-cols-2">
+            @if (currentCard.power && currentCard.toughness) {
+              <div class="rounded-xl border border-zinc-800 bg-zinc-900 p-4">
+                <p class="text-xs uppercase tracking-wide text-zinc-500">Force / Endurance</p>
+                <p class="mt-1 text-sm text-zinc-200">{{ currentCard.power }} / {{ currentCard.toughness }}</p>
+              </div>
+            }
+
+            @if (currentCard.loyalty) {
+              <div class="rounded-xl border border-zinc-800 bg-zinc-900 p-4">
+                <p class="text-xs uppercase tracking-wide text-zinc-500">Loyaute</p>
+                <p class="mt-1 text-sm text-zinc-200">{{ currentCard.loyalty }}</p>
+              </div>
+            }
+
+            @if (currentCard.releasedAt) {
+              <div class="rounded-xl border border-zinc-800 bg-zinc-900 p-4">
+                <p class="text-xs uppercase tracking-wide text-zinc-500">Date de sortie</p>
+                <p class="mt-1 text-sm text-zinc-200">{{ currentCard.releasedAt }}</p>
+              </div>
+            }
+
+            @if (currentCard.collectorNumber) {
+              <div class="rounded-xl border border-zinc-800 bg-zinc-900 p-4">
+                <p class="text-xs uppercase tracking-wide text-zinc-500">Numero collecteur</p>
+                <p class="mt-1 text-sm text-zinc-200">{{ currentCard.collectorNumber }}</p>
+              </div>
+            }
+          </section>
+        }
+
         <section class="rounded-xl border border-zinc-800 bg-zinc-900 p-4">
           <h2 class="text-lg font-semibold text-zinc-100">Texte</h2>
 
@@ -50,6 +82,12 @@
             <p class="mt-2 whitespace-pre-line text-sm leading-6 text-zinc-300">{{ currentCard.oracleText }}</p>
           } @else {
             <p class="mt-2 text-sm text-zinc-400">Aucun texte Oracle disponible.</p>
+          }
+
+          @if (currentCard.flavorText) {
+            <blockquote class="mt-4 border-l-2 border-zinc-700 pl-4 text-sm italic leading-6 text-zinc-400">
+              {{ currentCard.flavorText }}
+            </blockquote>
           }
         </section>
       </div>
@@ -62,8 +100,18 @@
           </div>
 
           <div class="rounded-xl border border-zinc-800 bg-zinc-900 p-4">
+            <p class="text-xs uppercase tracking-wide text-zinc-500">Code edition</p>
+            <p class="mt-1 text-sm text-zinc-200">{{ currentCard.setCode || 'Inconnu' }}</p>
+          </div>
+
+          <div class="rounded-xl border border-zinc-800 bg-zinc-900 p-4">
             <p class="text-xs uppercase tracking-wide text-zinc-500">Rarete</p>
             <p class="mt-1 text-sm capitalize text-zinc-200">{{ currentCard.rarity }}</p>
+          </div>
+
+          <div class="rounded-xl border border-zinc-800 bg-zinc-900 p-4">
+            <p class="text-xs uppercase tracking-wide text-zinc-500">Couleurs</p>
+            <p class="mt-1 text-sm text-zinc-200">{{ colorLabel() }}</p>
           </div>
 
           <div class="rounded-xl border border-zinc-800 bg-zinc-900 p-4">
@@ -108,8 +156,28 @@
             <p class="mt-3 text-sm text-zinc-400">
               Cree d'abord un deck depuis la page des decks pour pouvoir ajouter cette carte.
             </p>
+            <a
+              routerLink="/decks"
+              class="mt-3 inline-flex rounded-lg border border-zinc-700 px-3 py-2 text-sm text-zinc-200 transition hover:border-amber-400 hover:text-amber-300"
+            >
+              Aller a mes decks
+            </a>
           }
         </section>
+
+        @if (currentCard.scryfallUri) {
+          <section class="rounded-xl border border-zinc-800 bg-zinc-900 p-4">
+            <h2 class="text-lg font-semibold text-zinc-100">Source</h2>
+            <a
+              [href]="currentCard.scryfallUri"
+              target="_blank"
+              rel="noreferrer"
+              class="mt-3 inline-flex rounded-lg border border-zinc-700 px-3 py-2 text-sm text-zinc-200 transition hover:border-amber-400 hover:text-amber-300"
+            >
+              Voir la fiche Scryfall
+            </a>
+          </section>
+        }
       </div>
     </section>
   }

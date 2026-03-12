@@ -15,10 +15,12 @@ export class DecksPage {
 
   readonly decks = this.deckService.decks;
   readonly errorMessage = signal('');
+  readonly successMessage = signal('');
   readonly hasDecks = computed(() => this.decks().length > 0);
   readonly formatOptions = ['Standard', 'Modern', 'Pioneer', 'Commander'];
 
   createDeck(name: string, format: string): void {
+    this.successMessage.set('');
     const newDeck = this.deckService.createDeck(name, format);
 
     if (!newDeck) {
@@ -36,5 +38,25 @@ export class DecksPage {
 
   getValidationSummary(deck: Deck): DeckValidationSummary {
     return this.deckService.getDeckValidationSummary(deck);
+  }
+
+  deleteDeck(deck: Deck): void {
+    const shouldDelete =
+      typeof globalThis.confirm !== 'function' ||
+      globalThis.confirm(`Supprimer le deck "${deck.name}" ?`);
+
+    if (!shouldDelete) {
+      return;
+    }
+
+    const removed = this.deckService.removeDeck(deck.id);
+
+    if (!removed) {
+      this.errorMessage.set('Impossible de supprimer ce deck.');
+      return;
+    }
+
+    this.errorMessage.set('');
+    this.successMessage.set(`Le deck ${deck.name} a ete supprime.`);
   }
 }

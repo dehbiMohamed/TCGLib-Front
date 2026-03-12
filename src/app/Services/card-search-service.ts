@@ -30,9 +30,18 @@ export class CardSearchService {
         manaCost: card.mana_cost ?? '',
         typeLine: this.getCardTypeLine(card),
         oracleText: this.getCardOracleText(card),
+        flavorText: this.getCardFlavorText(card),
         setName: card.set_name ?? '',
+        setCode: (card.set ?? '').toUpperCase(),
+        collectorNumber: card.collector_number ?? '',
         rarity: card.rarity ?? '',
         artist: card.artist ?? '',
+        releasedAt: card.released_at ?? '',
+        power: this.getFaceValue(card, 'power'),
+        toughness: this.getFaceValue(card, 'toughness'),
+        loyalty: this.getFaceValue(card, 'loyalty'),
+        colors: this.getCardColors(card),
+        scryfallUri: card.scryfall_uri ?? '',
       }))
     );
   }
@@ -82,6 +91,15 @@ export class CardSearchService {
     return card.oracle_text ?? faceTexts.join('\n\n');
   }
 
+  private getCardFlavorText(card: any): string {
+    const faceTexts =
+      card.card_faces
+        ?.map((face: any) => face.flavor_text)
+        .filter((text: string | undefined) => Boolean(text)) ?? [];
+
+    return card.flavor_text ?? faceTexts.join('\n\n');
+  }
+
   private getCardTypeLine(card: any): string {
     const faceTypes =
       card.card_faces
@@ -89,5 +107,30 @@ export class CardSearchService {
         .filter((typeLine: string | undefined) => Boolean(typeLine)) ?? [];
 
     return card.type_line ?? faceTypes.join(' // ');
+  }
+
+  private getFaceValue(card: any, fieldName: 'power' | 'toughness' | 'loyalty'): string {
+    const rootValue = card[fieldName];
+    if (rootValue) {
+      return rootValue;
+    }
+
+    const faceValues =
+      card.card_faces
+        ?.map((face: any) => face[fieldName])
+        .filter((value: string | undefined) => Boolean(value)) ?? [];
+
+    return faceValues.join(' // ');
+  }
+
+  private getCardColors(card: any): string[] {
+    if (Array.isArray(card.colors) && card.colors.length > 0) {
+      return card.colors;
+    }
+
+    const faceColors: string[] =
+      card.card_faces?.flatMap((face: any) => (Array.isArray(face.colors) ? face.colors : [])) ?? [];
+
+    return [...new Set<string>(faceColors)];
   }
 }

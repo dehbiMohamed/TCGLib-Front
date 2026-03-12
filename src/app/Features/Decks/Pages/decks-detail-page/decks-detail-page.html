@@ -7,18 +7,98 @@
   </a>
 
   @if (deck(); as currentDeck) {
-    <header class="space-y-2">
-      <h1 class="text-2xl font-bold text-zinc-100 sm:text-3xl">{{ currentDeck.name }}</h1>
-      <p class="text-zinc-300">Format: {{ currentDeck.format }}</p>
-      <p class="text-zinc-300">Total de cartes: {{ totalCards() }}</p>
+    <header class="flex flex-wrap items-start justify-between gap-4">
+      <div class="space-y-2">
+        <h1 class="text-2xl font-bold text-zinc-100 sm:text-3xl">{{ currentDeck.name }}</h1>
+        <p class="text-zinc-300">Format: {{ currentDeck.format }}</p>
+        <p class="text-zinc-300">Total de cartes: {{ totalCards() }}</p>
+      </div>
+
+      <button
+        type="button"
+        class="inline-flex rounded-lg border border-red-700 px-3 py-2 text-sm font-medium text-red-200 transition hover:bg-red-950/30"
+        (click)="deleteCurrentDeck()"
+      >
+        Supprimer le deck
+      </button>
     </header>
 
-    @if (validationSummary(); as summary) {
+    <section class="rounded-xl border border-zinc-800 bg-zinc-900 p-5">
+      <h2 class="text-lg font-semibold text-zinc-100">Parametres du deck</h2>
+      <p class="mt-2 text-sm text-zinc-400">
+        Tu peux renommer le deck ou changer son format. La validation se mettra a jour automatiquement.
+      </p>
+
+      @if (previewFormatRule(); as formatRule) {
+        <article class="mt-4 rounded-lg border border-zinc-800 bg-zinc-950/40 p-4">
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <p class="text-xs uppercase tracking-wide text-zinc-500">Impact du format</p>
+
+            @if (hasPendingDeckChanges()) {
+              <span class="rounded-full border border-amber-700 bg-amber-950/30 px-2 py-1 text-xs text-amber-200">
+                Apercu avant enregistrement
+              </span>
+            }
+          </div>
+          <p class="mt-1 text-sm text-zinc-300">{{ formatRule.helperText }}</p>
+          <p class="mt-2 text-sm font-medium text-zinc-100">{{ formatRule.ruleLabel }}</p>
+        </article>
+      }
+
+      <div class="mt-4 grid gap-4 md:grid-cols-[1fr,220px,auto]">
+        <input
+          #deckNameInput
+          type="text"
+          [value]="draftDeckName()"
+          class="rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-zinc-100"
+          (input)="onDeckNameChange(deckNameInput.value)"
+        />
+
+        <select
+          #deckFormatInput
+          [value]="draftDeckFormat()"
+          class="rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-zinc-100"
+          (change)="onDeckFormatChange(deckFormatInput.value)"
+        >
+          @for (format of formatOptions; track format) {
+            <option [value]="format">{{ format }}</option>
+          }
+        </select>
+
+        <button
+          type="button"
+          class="rounded-lg bg-amber-400 px-3 py-2 text-sm font-medium text-zinc-950 transition hover:bg-amber-300"
+          (click)="updateDeckInfo(draftDeckName(), draftDeckFormat())"
+        >
+          Enregistrer
+        </button>
+      </div>
+
+      @if (deckSettingsMessage()) {
+        @if (deckSettingsMessageTone() === 'success') {
+          <p class="mt-4 rounded-lg border border-emerald-700 bg-emerald-950/30 p-3 text-sm text-emerald-200">
+            {{ deckSettingsMessage() }}
+          </p>
+        } @else {
+          <p class="mt-4 rounded-lg border border-amber-700 bg-amber-950/30 p-3 text-sm text-amber-200">
+            {{ deckSettingsMessage() }}
+          </p>
+        }
+      }
+    </section>
+
+    @if (previewValidationSummary(); as summary) {
       <section class="grid gap-4 md:grid-cols-3">
         <article class="rounded-xl border border-zinc-800 bg-zinc-900 p-4">
-          <p class="text-sm text-zinc-400">Regle simple</p>
+          <p class="text-sm text-zinc-400">Regle active</p>
           <p class="mt-2 text-lg font-semibold text-zinc-100">{{ summary.ruleLabel }}</p>
-          <p class="mt-1 text-sm text-zinc-400">Version volontairement simple pour le projet.</p>
+          <p class="mt-1 text-sm text-zinc-400">
+            @if (hasPendingDeckChanges()) {
+              Apercu calcule a partir du format selectionne.
+            } @else {
+              Version volontairement simple pour le projet.
+            }
+          </p>
         </article>
 
         <article class="rounded-xl border border-zinc-800 bg-zinc-900 p-4">
@@ -196,7 +276,7 @@
     </section>
   } @else {
     <p class="rounded-lg border border-dashed border-zinc-700 p-4 text-sm text-zinc-400">
-      Deck introuvable pour l'id: "{{ deckId() }}".
+      Deck introuvable ou deja supprime pour l'id: "{{ deckId() }}".
     </p>
   }
 </section>

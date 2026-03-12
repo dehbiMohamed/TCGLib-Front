@@ -27,6 +27,27 @@ export class CardDetailPage {
   readonly addToDeckMessageTone = signal<'success' | 'warning'>('success');
   readonly decks = this.deckService.decks;
   readonly hasDecks = computed(() => this.decks().length > 0);
+  readonly colorLabel = computed(() => {
+    const currentCard = this.card();
+    if (!currentCard) {
+      return '';
+    }
+
+    return currentCard.colors.length > 0 ? currentCard.colors.join(', ') : 'Incolore';
+  });
+  readonly hasCardStats = computed(() => {
+    const currentCard = this.card();
+    if (!currentCard) {
+      return false;
+    }
+
+    return Boolean(
+      (currentCard.power && currentCard.toughness) ||
+        currentCard.loyalty ||
+        currentCard.releasedAt ||
+        currentCard.collectorNumber
+    );
+  });
 
   constructor() {
     toObservable(this.cardId)

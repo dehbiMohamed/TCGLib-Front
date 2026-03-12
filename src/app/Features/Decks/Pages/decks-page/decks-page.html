@@ -40,15 +40,18 @@
         {{ errorMessage() }}
       </p>
     }
+
+    @if (successMessage()) {
+      <p class="mt-3 rounded-lg border border-emerald-700 bg-emerald-950/30 p-3 text-sm text-emerald-200">
+        {{ successMessage() }}
+      </p>
+    }
   </section>
 
   @if (hasDecks()) {
     <div class="grid gap-4 md:grid-cols-2">
       @for (deck of decks(); track deck.id) {
-        <a
-          [routerLink]="['/decks', deck.id]"
-          class="rounded-xl border border-zinc-800 bg-zinc-900 p-5 transition hover:border-amber-400/60 hover:bg-zinc-800/80"
-        >
+        <article class="rounded-xl border border-zinc-800 bg-zinc-900 p-5">
           <div class="flex items-start justify-between gap-3">
             <div>
               <h2 class="text-lg font-semibold text-zinc-100">{{ deck.name }}</h2>
@@ -82,8 +85,24 @@
           </div>
 
           <p class="mt-3 text-sm text-zinc-300">Format: {{ deck.format }}</p>
-          <p class="mt-3 text-sm font-medium text-amber-400">Voir le detail du deck</p>
-        </a>
+
+          <div class="mt-4 flex flex-wrap gap-3">
+            <a
+              [routerLink]="['/decks', deck.id]"
+              class="inline-flex rounded-lg border border-zinc-700 px-3 py-2 text-sm font-medium text-amber-400 transition hover:border-amber-400/60 hover:bg-zinc-800/80"
+            >
+              Voir le detail du deck
+            </a>
+
+            <button
+              type="button"
+              class="inline-flex rounded-lg border border-red-700 px-3 py-2 text-sm font-medium text-red-200 transition hover:bg-red-950/30"
+              (click)="deleteDeck(deck)"
+            >
+              Supprimer
+            </button>
+          </div>
+        </article>
       }
     </div>
   } @else {
