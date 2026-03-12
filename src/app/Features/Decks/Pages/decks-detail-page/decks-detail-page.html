@@ -189,31 +189,45 @@
         <ul class="mt-4 grid gap-3 md:grid-cols-2">
           @for (card of searchResults(); track card.id) {
             <li class="flex items-center gap-3 rounded-lg border border-zinc-800 bg-zinc-950/40 p-3">
-              @if (card.imageUrl) {
-                <img [src]="card.imageUrl" [alt]="card.name" class="h-20 w-14 rounded object-cover" />
-              } @else {
-                <div class="flex h-20 w-14 items-center justify-center rounded bg-zinc-800 text-xs text-zinc-400">
-                  N/A
-                </div>
-              }
-
-              <div class="min-w-0 flex-1">
-                <p class="font-medium text-zinc-100">{{ card.name }}</p>
-                <p class="text-sm text-zinc-400">{{ card.setName }}</p>
-              </div>
-
-              <button
-                type="button"
-                class="rounded-lg border border-zinc-700 px-3 py-2 text-sm text-zinc-200 transition hover:border-amber-400 hover:text-amber-300 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-zinc-700 disabled:hover:text-zinc-200"
-                [disabled]="!canAddCard(card.id)"
-                (click)="addCard(card)"
+              <a
+                [routerLink]="['/cards', card.id]"
+                class="flex min-w-0 flex-1 items-center gap-3 rounded-lg transition hover:text-amber-300"
               >
-                @if (isCommanderDeck() && !canAddCard(card.id)) {
-                  Deja dans le deck
+                @if (card.imageUrl) {
+                  <img [src]="card.imageUrl" [alt]="card.name" class="h-20 w-14 rounded object-cover" />
                 } @else {
-                  Ajouter
+                  <div class="flex h-20 w-14 items-center justify-center rounded bg-zinc-800 text-xs text-zinc-400">
+                    N/A
+                  </div>
                 }
-              </button>
+
+                <div class="min-w-0 flex-1">
+                  <p class="font-medium text-zinc-100">{{ card.name }}</p>
+                  <p class="text-sm text-zinc-400">{{ card.setName }}</p>
+                </div>
+              </a>
+
+              <div class="flex shrink-0 flex-col items-end gap-2">
+                <a
+                  [routerLink]="['/cards', card.id]"
+                  class="rounded-lg border border-zinc-700 px-3 py-2 text-xs text-zinc-200 transition hover:border-amber-400 hover:text-amber-300"
+                >
+                  Voir la fiche
+                </a>
+
+                <button
+                  type="button"
+                  class="rounded-lg border border-zinc-700 px-3 py-2 text-sm text-zinc-200 transition hover:border-amber-400 hover:text-amber-300 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-zinc-700 disabled:hover:text-zinc-200"
+                  [disabled]="!canAddCard(card.id)"
+                  (click)="addCard(card)"
+                >
+                  @if (isCommanderDeck() && !canAddCard(card.id)) {
+                    Deja dans le deck
+                  } @else {
+                    Ajouter
+                  }
+                </button>
+              </div>
             </li>
           }
         </ul>
@@ -227,43 +241,57 @@
         <ul class="mt-4 space-y-3">
           @for (card of currentDeck.cards; track card.cardId) {
             <li class="flex items-center gap-4 rounded-lg border border-zinc-800 bg-zinc-950/40 p-3">
-              @if (card.imageUrl) {
-                <img [src]="card.imageUrl" [alt]="card.name" class="h-20 w-14 rounded object-cover" />
-              } @else {
-                <div class="flex h-20 w-14 items-center justify-center rounded bg-zinc-800 text-xs text-zinc-400">
-                  N/A
+              <a
+                [routerLink]="['/cards', card.cardId]"
+                class="flex min-w-0 flex-1 items-center gap-4 rounded-lg transition hover:text-amber-300"
+              >
+                @if (card.imageUrl) {
+                  <img [src]="card.imageUrl" [alt]="card.name" class="h-20 w-14 rounded object-cover" />
+                } @else {
+                  <div class="flex h-20 w-14 items-center justify-center rounded bg-zinc-800 text-xs text-zinc-400">
+                    N/A
+                  </div>
+                }
+
+                <div class="min-w-0 flex-1">
+                  <p class="font-medium text-zinc-100">{{ card.name }}</p>
+                  <p class="text-sm text-zinc-400">Quantite: {{ card.quantity }}</p>
                 </div>
-              }
+              </a>
 
-              <div class="min-w-0 flex-1">
-                <p class="font-medium text-zinc-100">{{ card.name }}</p>
-                <p class="text-sm text-zinc-400">Quantite: {{ card.quantity }}</p>
-              </div>
-
-              <div class="flex items-center gap-2">
-                <button
-                  type="button"
-                  class="flex h-10 w-10 items-center justify-center rounded-lg border border-zinc-700 text-lg text-zinc-200 transition hover:border-red-400 hover:text-red-300"
-                  (click)="decreaseCardQuantity(card.cardId)"
+              <div class="flex shrink-0 flex-col items-end gap-2">
+                <a
+                  [routerLink]="['/cards', card.cardId]"
+                  class="rounded-lg border border-zinc-700 px-3 py-2 text-xs text-zinc-200 transition hover:border-amber-400 hover:text-amber-300"
                 >
-                  -
-                </button>
+                  Voir la fiche
+                </a>
 
-                <span
-                  class="w-12 rounded-lg border border-zinc-700 px-3 py-2 text-center text-sm text-zinc-200"
-                >
-                  {{ card.quantity }}
-                </span>
-
-                @if (!isCommanderDeck()) {
+                <div class="flex items-center gap-2">
                   <button
                     type="button"
-                    class="flex h-10 w-10 items-center justify-center rounded-lg border border-zinc-700 text-lg text-zinc-200 transition hover:border-emerald-400 hover:text-emerald-300"
-                    (click)="increaseCardQuantity(card)"
+                    class="flex h-10 w-10 items-center justify-center rounded-lg border border-zinc-700 text-lg text-zinc-200 transition hover:border-red-400 hover:text-red-300"
+                    (click)="decreaseCardQuantity(card.cardId)"
                   >
-                    +
+                    -
                   </button>
-                }
+
+                  <span
+                    class="w-12 rounded-lg border border-zinc-700 px-3 py-2 text-center text-sm text-zinc-200"
+                  >
+                    {{ card.quantity }}
+                  </span>
+
+                  @if (!isCommanderDeck()) {
+                    <button
+                      type="button"
+                      class="flex h-10 w-10 items-center justify-center rounded-lg border border-zinc-700 text-lg text-zinc-200 transition hover:border-emerald-400 hover:text-emerald-300"
+                      (click)="increaseCardQuantity(card)"
+                    >
+                      +
+                    </button>
+                  }
+                </div>
               </div>
             </li>
           }

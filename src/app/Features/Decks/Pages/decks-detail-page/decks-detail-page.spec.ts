@@ -194,4 +194,41 @@ describe('DecksDetailPage', () => {
     expect(component.draftDeckName()).toBe('Boros Burn');
     expect(component.draftDeckFormat()).toBe('Commander');
   });
+
+  it('should show card detail links for search results and deck cards', async () => {
+    component.searchResults.set([
+      {
+        id: 'lightning-bolt',
+        name: 'Lightning Bolt',
+        imageUrl: 'https://example.com/lightning-bolt.jpg',
+        setName: 'Magic 2010',
+      },
+    ]);
+
+    deckServiceStub.decks.set([
+      {
+        ...mockDeck,
+        cards: [
+          {
+            cardId: 'shock',
+            name: 'Shock',
+            imageUrl: 'https://example.com/shock.jpg',
+            quantity: 2,
+          },
+        ],
+      },
+    ]);
+
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const cardLinks = Array.from(
+      fixture.nativeElement.querySelectorAll('a') as NodeListOf<HTMLAnchorElement>
+    )
+      .map((link: HTMLAnchorElement) => link.getAttribute('href') ?? '')
+      .filter((href) => href.includes('/cards/'));
+
+    expect(cardLinks).toContain('/cards/lightning-bolt');
+    expect(cardLinks).toContain('/cards/shock');
+  });
 });
