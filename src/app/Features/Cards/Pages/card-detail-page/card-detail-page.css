@@ -1,1 +1,140 @@
+:host {
+  display: block;
+}
 
+.card-detail-page__layout {
+  display: grid;
+  gap: 1rem;
+}
+
+.card-detail-page__visual {
+  width: 100%;
+  max-width: 13.75rem;
+  margin: 0 auto;
+}
+
+.card-detail-page__image-shell {
+  overflow: hidden;
+  border-radius: 0.25rem;
+  background: rgb(9 9 11 / 0.4);
+}
+
+.card-detail-page__image {
+  display: block;
+  width: 100%;
+  object-fit: contain;
+}
+
+.card-detail-page__image-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.25rem;
+  background: #27272a;
+  color: #a1a1aa;
+  font-size: 0.875rem;
+  aspect-ratio: 63 / 88;
+}
+
+.card-detail-page__content,
+.card-detail-page__sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.card-detail-page__header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.card-detail-page__title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.card-detail-page__title {
+  margin: 0;
+}
+
+.card-detail-page__mana-cost {
+  padding: 0.25rem 0.75rem;
+  border: 1px solid #3f3f46;
+  border-radius: 0.5rem;
+  color: #e4e4e7;
+  font-size: 0.875rem;
+}
+
+.card-detail-page__stats,
+.card-detail-page__meta-grid {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.card-detail-page__oracle-text {
+  margin-top: 0.5rem;
+  color: #d4d4d8;
+  font-size: 0.875rem;
+  line-height: 1.75rem;
+  white-space: pre-line;
+}
+
+.card-detail-page__text-empty {
+  margin-top: 0.5rem;
+}
+
+.card-detail-page__flavor-text {
+  margin-top: 1rem;
+  padding-left: 1rem;
+  border-left: 2px solid #3f3f46;
+  color: #a1a1aa;
+  font-size: 0.875rem;
+  font-style: italic;
+  line-height: 1.75rem;
+}
+
+.card-detail-page__meta-value--capitalize {
+  text-transform: capitalize;
+}
+
+.card-detail-page__deck-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.card-detail-page__deck-message,
+.card-detail-page__empty-decks,
+.card-detail-page__deck-link,
+.card-detail-page__source-link {
+  margin-top: 0.75rem;
+}
+
+@media (min-width: 640px) {
+  .card-detail-page__stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .card-detail-page__meta-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1280px) {
+  .card-detail-page__layout {
+    grid-template-columns: 220px minmax(0, 1fr) 280px;
+  }
+
+  .card-detail-page__visual {
+    margin: 0;
+  }
+
+  .card-detail-page__meta-grid {
+    grid-template-columns: 1fr;
+  }
+}

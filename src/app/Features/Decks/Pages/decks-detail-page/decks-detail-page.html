@@ -1,23 +1,31 @@
-<section class="space-y-6">
+<section class="page deck-detail-page">
   <a
     routerLink="/decks"
-    class="inline-flex items-center gap-2 rounded-lg border border-zinc-700 px-3 py-2 text-sm text-zinc-300 transition hover:border-amber-400 hover:text-amber-400"
+    class="back-link"
   >
     Retour a mes decks
   </a>
 
-  @if (deck(); as currentDeck) {
-    <header class="flex flex-wrap items-start justify-between gap-4">
-      <div class="space-y-2">
-        <h1 class="text-2xl font-bold text-zinc-100 sm:text-3xl">{{ currentDeck.name }}</h1>
-        <p class="text-zinc-300">Format: {{ currentDeck.format }}</p>
-        <p class="text-zinc-300">Total de cartes: {{ totalCards() }}</p>
+  @if (decksLoading()) {
+    <p class="message message--muted">
+      Chargement du deck...
+    </p>
+  } @else if (decksLoadError()) {
+    <p class="message message--error">
+      {{ decksLoadError() }}
+    </p>
+  } @else if (deck(); as currentDeck) {
+    <header class="deck-detail-page__header">
+      <div class="deck-detail-page__header-content">
+        <h1 class="page-title">{{ currentDeck.name }}</h1>
+        <p class="body-text">Format: {{ currentDeck.format }}</p>
+        <p class="body-text">Total de cartes: {{ totalCards() }}</p>
       </div>
 
-      <div class="flex flex-wrap items-center gap-3">
+      <div class="deck-detail-page__header-actions">
         <button
           type="button"
-          class="inline-flex rounded-lg border border-zinc-700 px-3 py-2 text-sm font-medium text-zinc-200 transition hover:border-amber-400 hover:text-amber-300"
+          class="button button--secondary"
           (click)="toggleDeckSettings()"
         >
           @if (showDeckSettings()) {
@@ -29,7 +37,7 @@
 
         <button
           type="button"
-          class="inline-flex rounded-lg border border-red-700 px-3 py-2 text-sm font-medium text-red-200 transition hover:bg-red-950/30"
+          class="button button--danger"
           (click)="deleteCurrentDeck()"
         >
           Supprimer le deck
@@ -38,41 +46,38 @@
     </header>
 
     @if (showDeckSettings()) {
-      <section class="rounded-xl border border-zinc-800 bg-zinc-900 p-5">
-        <h2 class="text-lg font-semibold text-zinc-100">Parametres du deck</h2>
-        <p class="mt-2 text-sm text-zinc-400">
-          Tu peux renommer le deck ou changer son format. La validation se mettra a jour automatiquement.
-        </p>
+      <section class="panel deck-detail-page__settings-panel">
+        <h2 class="section-title">Parametres du deck</h2>
 
         @if (previewFormatRule(); as formatRule) {
-          <article class="mt-4 rounded-lg border border-zinc-800 bg-zinc-950/40 p-4">
-            <div class="flex flex-wrap items-center justify-between gap-3">
-              <p class="text-xs uppercase tracking-wide text-zinc-500">Impact du format</p>
+          <article class="panel panel--soft panel--compact deck-detail-page__format-preview">
+            <div class="deck-detail-page__format-preview-header">
+              <p class="stat-label">Impact du format</p>
 
               @if (hasPendingDeckChanges()) {
-                <span class="rounded-full border border-amber-700 bg-amber-950/30 px-2 py-1 text-xs text-amber-200">
+                <span class="badge badge--warning">
                   Apercu avant enregistrement
                 </span>
               }
             </div>
-            <p class="mt-1 text-sm text-zinc-300">{{ formatRule.helperText }}</p>
-            <p class="mt-2 text-sm font-medium text-zinc-100">{{ formatRule.ruleLabel }}</p>
+            <p class="body-text deck-detail-page__format-preview-text">{{ formatRule.helperText }}</p>
+            <p class="deck-detail-page__format-preview-rule">{{ formatRule.ruleLabel }}</p>
           </article>
         }
 
-        <div class="mt-4 grid gap-4 md:grid-cols-[1fr,220px,auto]">
+        <div class="deck-detail-page__settings-form">
           <input
             #deckNameInput
             type="text"
             [value]="draftDeckName()"
-            class="rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-zinc-100"
+            class="form-input form-input--full"
             (input)="onDeckNameChange(deckNameInput.value)"
           />
 
           <select
             #deckFormatInput
             [value]="draftDeckFormat()"
-            class="rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-zinc-100"
+            class="form-select form-select--full"
             (change)="onDeckFormatChange(deckFormatInput.value)"
           >
             @for (format of formatOptions; track format) {
@@ -82,7 +87,7 @@
 
           <button
             type="button"
-            class="rounded-lg bg-amber-400 px-3 py-2 text-sm font-medium text-zinc-950 transition hover:bg-amber-300"
+            class="button button--primary"
             (click)="updateDeckInfo(draftDeckName(), draftDeckFormat())"
           >
             Enregistrer
@@ -93,60 +98,47 @@
 
     @if (deckSettingsMessage()) {
       @if (deckSettingsMessageTone() === 'success') {
-        <p class="rounded-lg border border-emerald-700 bg-emerald-950/30 p-3 text-sm text-emerald-200">
+        <p class="message message--compact message--success">
           {{ deckSettingsMessage() }}
         </p>
       } @else {
-        <p class="rounded-lg border border-amber-700 bg-amber-950/30 p-3 text-sm text-amber-200">
+        <p class="message message--compact message--warning">
           {{ deckSettingsMessage() }}
         </p>
       }
     }
 
     @if (previewValidationSummary(); as summary) {
-      <section class="grid gap-4 md:grid-cols-3">
-        <article class="rounded-xl border border-zinc-800 bg-zinc-900 p-4">
-          <p class="text-sm text-zinc-400">Regle active</p>
-          <p class="mt-2 text-lg font-semibold text-zinc-100">{{ summary.ruleLabel }}</p>
-          <p class="mt-1 text-sm text-zinc-400">
-            @if (hasPendingDeckChanges()) {
-              Apercu calcule a partir du format selectionne.
-            } @else {
-              Version volontairement simple pour le projet.
-            }
-          </p>
+      <section class="deck-detail-page__summary-grid">
+        <article class="panel panel--compact">
+          <p class="body-text--muted">Regle active</p>
+          <p class="deck-detail-page__summary-value">{{ summary.ruleLabel }}</p>
         </article>
 
-        <article class="rounded-xl border border-zinc-800 bg-zinc-900 p-4">
-          <p class="text-sm text-zinc-400">Cartes actuelles</p>
-          <p class="mt-2 text-lg font-semibold text-zinc-100">
+        <article class="panel panel--compact">
+          <p class="body-text--muted">Cartes actuelles</p>
+          <p class="deck-detail-page__summary-value">
             {{ summary.totalCards }} / {{ summary.targetCardCount }}
           </p>
-          <p class="mt-1 text-sm text-zinc-400">{{ summary.detailMessage }}</p>
+          <p class="body-text--muted deck-detail-page__summary-detail">{{ summary.detailMessage }}</p>
         </article>
 
-        <article class="rounded-xl border border-zinc-800 bg-zinc-900 p-4">
-          <p class="text-sm text-zinc-400">Statut</p>
+        <article class="panel panel--compact">
+          <p class="body-text--muted">Statut</p>
           @if (summary.statusTone === 'success') {
-            <span
-              class="mt-2 inline-flex rounded-full border border-emerald-700 bg-emerald-950/30 px-3 py-1 text-sm font-medium text-emerald-200"
-            >
+            <span class="badge badge--success deck-detail-page__summary-badge">
               {{ summary.statusLabel }}
             </span>
           } @else if (summary.statusTone === 'warning') {
-            <span
-              class="mt-2 inline-flex rounded-full border border-amber-700 bg-amber-950/30 px-3 py-1 text-sm font-medium text-amber-200"
-            >
+            <span class="badge badge--warning deck-detail-page__summary-badge">
               {{ summary.statusLabel }}
             </span>
           } @else {
-            <span
-              class="mt-2 inline-flex rounded-full border border-red-700 bg-red-950/30 px-3 py-1 text-sm font-medium text-red-200"
-            >
+            <span class="badge badge--danger deck-detail-page__summary-badge">
               {{ summary.statusLabel }}
             </span>
           }
-          <p class="mt-3 text-sm text-zinc-400">
+          <p class="body-text--muted deck-detail-page__summary-note">
             @if (summary.isValid) {
               Deck jouable sur cette regle simple.
             } @else {
@@ -157,85 +149,84 @@
       </section>
     }
 
-    <section class="rounded-xl border border-zinc-800 bg-zinc-900 p-5">
-      <h2 class="text-lg font-semibold text-zinc-100">Rechercher et ajouter des cartes</h2>
+    <section class="panel deck-detail-page__search-panel">
+      <h2 class="section-title">Rechercher et ajouter des cartes</h2>
 
-      <div class="mt-4 space-y-3">
+      <div class="deck-detail-page__search-input-wrap">
         <input
           #deckSearchInput
           type="text"
           placeholder="Ex: Counterspell"
-          class="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-zinc-100"
+          class="form-input form-input--full"
           (input)="onSearchQueryChange(deckSearchInput.value)"
         />
-        <p class="text-sm text-zinc-400">Recherche en anglais uniquement.</p>
       </div>
 
       @if (searchErrorMessage()) {
-        <p class="mt-4 rounded-lg border border-red-700 bg-red-950/30 p-3 text-sm text-red-200">
+        <p class="message message--compact message--error deck-detail-page__feedback">
           {{ searchErrorMessage() }}
         </p>
       }
 
       @if (addCardMessage()) {
         @if (addCardMessageTone() === 'success') {
-          <p class="mt-4 rounded-lg border border-emerald-700 bg-emerald-950/30 p-3 text-sm text-emerald-200">
+          <p class="message message--compact message--success deck-detail-page__feedback">
             {{ addCardMessage() }}
           </p>
         } @else {
-          <p class="mt-4 rounded-lg border border-amber-700 bg-amber-950/30 p-3 text-sm text-amber-200">
+          <p class="message message--compact message--warning deck-detail-page__feedback">
             {{ addCardMessage() }}
           </p>
         }
       }
 
       @if (searchLoading()) {
-        <p class="mt-4 rounded-lg border border-dashed border-zinc-700 p-3 text-sm text-zinc-400">
+        <p class="message message--compact message--muted deck-detail-page__feedback">
           Recherche en cours...
         </p>
       }
 
       @if (showEmptySearchState()) {
-        <p class="mt-4 rounded-lg border border-dashed border-zinc-700 p-3 text-sm text-zinc-400">
+        <p class="message message--compact message--muted deck-detail-page__feedback">
           Aucune carte trouvee.
         </p>
       }
 
       @if (searchResults().length > 0 && !searchLoading()) {
-        <ul class="mt-4 grid gap-3 md:grid-cols-2">
+        <ul class="deck-detail-page__search-results">
           @for (card of searchResults(); track card.id) {
-            <li class="flex items-center gap-3 rounded-lg border border-zinc-800 bg-zinc-950/40 p-3">
+            <li class="deck-detail-page__search-item">
               <a
                 [routerLink]="['/cards', card.id]"
                 [queryParams]="{ fromDeckId: currentDeck.id }"
-                class="flex min-w-0 flex-1 items-center gap-3 rounded-lg transition hover:text-amber-300"
+                class="deck-detail-page__item-link"
               >
                 @if (card.imageUrl) {
-                  <img [src]="card.imageUrl" [alt]="card.name" class="h-20 w-14 rounded object-cover" />
+                  <img [src]="card.imageUrl" [alt]="card.name" class="deck-detail-page__item-image" />
                 } @else {
-                  <div class="flex h-20 w-14 items-center justify-center rounded bg-zinc-800 text-xs text-zinc-400">
+                  <div class="deck-detail-page__item-placeholder">
                     N/A
                   </div>
                 }
 
-                <div class="min-w-0 flex-1">
-                  <p class="font-medium text-zinc-100">{{ card.name }}</p>
-                  <p class="text-sm text-zinc-400">{{ card.setName }}</p>
+                <div class="deck-detail-page__item-meta">
+                  <p class="deck-detail-page__item-title">{{ card.name }}</p>
+                  <p class="deck-detail-page__item-subtitle">{{ card.setName }}</p>
                 </div>
               </a>
 
-              <div class="flex shrink-0 flex-col items-end gap-2">
+              <div class="deck-detail-page__item-actions">
                 <a
                   [routerLink]="['/cards', card.id]"
                   [queryParams]="{ fromDeckId: currentDeck.id }"
-                  class="rounded-lg border border-zinc-700 px-3 py-2 text-xs text-zinc-200 transition hover:border-amber-400 hover:text-amber-300"
+                  class="link-button link-button--secondary button--small"
                 >
                   Voir la fiche
                 </a>
 
                 <button
                   type="button"
-                  class="rounded-lg border border-zinc-700 px-3 py-2 text-sm text-zinc-200 transition hover:border-amber-400 hover:text-amber-300 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-zinc-700 disabled:hover:text-zinc-200"
+                  class="button button--secondary"
                   [disabled]="!canAddCard(card.id)"
                   (click)="addCard(card)"
                 >
@@ -252,60 +243,58 @@
       }
     </section>
 
-    <section class="rounded-xl border border-zinc-800 bg-zinc-900 p-5">
-      <h2 class="text-lg font-semibold text-zinc-100">Composition du deck</h2>
+    <section class="panel deck-detail-page__composition-panel">
+      <h2 class="section-title">Composition du deck</h2>
 
       @if (currentDeck.cards.length > 0) {
-        <ul class="mt-4 space-y-3">
+        <ul class="deck-detail-page__composition-list">
           @for (card of currentDeck.cards; track card.cardId) {
-            <li class="flex items-center gap-4 rounded-lg border border-zinc-800 bg-zinc-950/40 p-3">
+            <li class="deck-detail-page__composition-item">
               <a
                 [routerLink]="['/cards', card.cardId]"
                 [queryParams]="{ fromDeckId: currentDeck.id }"
-                class="flex min-w-0 flex-1 items-center gap-4 rounded-lg transition hover:text-amber-300"
+                class="deck-detail-page__item-link deck-detail-page__item-link--wide"
               >
                 @if (card.imageUrl) {
-                  <img [src]="card.imageUrl" [alt]="card.name" class="h-20 w-14 rounded object-cover" />
+                  <img [src]="card.imageUrl" [alt]="card.name" class="deck-detail-page__item-image" />
                 } @else {
-                  <div class="flex h-20 w-14 items-center justify-center rounded bg-zinc-800 text-xs text-zinc-400">
+                  <div class="deck-detail-page__item-placeholder">
                     N/A
                   </div>
                 }
 
-                <div class="min-w-0 flex-1">
-                  <p class="font-medium text-zinc-100">{{ card.name }}</p>
-                  <p class="text-sm text-zinc-400">Quantite: {{ card.quantity }}</p>
+                <div class="deck-detail-page__item-meta">
+                  <p class="deck-detail-page__item-title">{{ card.name }}</p>
+                  <p class="deck-detail-page__item-subtitle">Quantite: {{ card.quantity }}</p>
                 </div>
               </a>
 
-              <div class="flex shrink-0 flex-col items-end gap-2">
+              <div class="deck-detail-page__item-actions">
                 <a
                   [routerLink]="['/cards', card.cardId]"
                   [queryParams]="{ fromDeckId: currentDeck.id }"
-                  class="rounded-lg border border-zinc-700 px-3 py-2 text-xs text-zinc-200 transition hover:border-amber-400 hover:text-amber-300"
+                  class="link-button link-button--secondary button--small"
                 >
                   Voir la fiche
                 </a>
 
-                <div class="flex items-center gap-2">
+                <div class="deck-detail-page__quantity-controls">
                   <button
                     type="button"
-                    class="flex h-10 w-10 items-center justify-center rounded-lg border border-zinc-700 text-lg text-zinc-200 transition hover:border-red-400 hover:text-red-300"
+                    class="button button--secondary button--icon deck-detail-page__quantity-button deck-detail-page__quantity-button--decrease"
                     (click)="decreaseCardQuantity(card.cardId)"
                   >
                     -
                   </button>
 
-                  <span
-                    class="w-12 rounded-lg border border-zinc-700 px-3 py-2 text-center text-sm text-zinc-200"
-                  >
+                  <span class="deck-detail-page__quantity-value">
                     {{ card.quantity }}
                   </span>
 
                   @if (!isCommanderDeck()) {
                     <button
                       type="button"
-                      class="flex h-10 w-10 items-center justify-center rounded-lg border border-zinc-700 text-lg text-zinc-200 transition hover:border-emerald-400 hover:text-emerald-300"
+                      class="button button--secondary button--icon deck-detail-page__quantity-button deck-detail-page__quantity-button--increase"
                       (click)="increaseCardQuantity(card)"
                     >
                       +
@@ -317,13 +306,13 @@
           }
         </ul>
       } @else {
-        <p class="mt-3 rounded-lg border border-dashed border-zinc-700 p-4 text-sm text-zinc-400">
-          Ce deck est vide pour le moment. Va sur les cartes pour en ajouter.
+        <p class="message message--muted deck-detail-page__empty-state">
+          Ce deck est vide.
         </p>
       }
     </section>
   } @else {
-    <p class="rounded-lg border border-dashed border-zinc-700 p-4 text-sm text-zinc-400">
+    <p class="message message--muted">
       Deck introuvable ou deja supprime pour l'id: "{{ deckId() }}".
     </p>
   }

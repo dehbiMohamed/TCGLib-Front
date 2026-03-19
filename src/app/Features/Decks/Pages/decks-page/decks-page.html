@@ -1,25 +1,22 @@
-<section class="space-y-6">
-  <header class="space-y-2">
-    <h1 class="text-2xl font-bold text-zinc-100 sm:text-3xl">Mes decks</h1>
-    <p class="text-zinc-300">
-      Cree un deck en local pour preparer la future connexion avec le backend.
-    </p>
+<section class="page decks-page">
+  <header class="decks-page__header">
+    <h1 class="page-title">Mes decks</h1>
   </header>
 
-  <section class="rounded-xl border border-zinc-800 bg-zinc-900 p-5">
-    <h2 class="text-lg font-semibold text-zinc-100">Creer un deck</h2>
+  <section class="panel decks-page__create-panel">
+    <h2 class="section-title">Creer un deck</h2>
 
-    <div class="mt-4 grid gap-4 md:grid-cols-[1fr,220px,auto]">
+    <div class="decks-page__create-form">
       <input
         #deckNameInput
         type="text"
         placeholder="Ex: Azorius Control"
-        class="rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-zinc-100"
+        class="form-input form-input--full"
       />
 
       <select
         #deckFormatInput
-        class="rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-zinc-100"
+        class="form-select form-select--full"
       >
         @for (format of formatOptions; track format) {
           <option [value]="format">{{ format }}</option>
@@ -28,7 +25,7 @@
 
       <button
         type="button"
-        class="rounded-lg bg-amber-400 px-4 py-2 font-medium text-zinc-950 transition hover:bg-amber-300"
+        class="button button--primary decks-page__create-button"
         (click)="createDeck(deckNameInput.value, deckFormatInput.value); deckNameInput.value = ''"
       >
         Creer
@@ -36,32 +33,37 @@
     </div>
 
     @if (errorMessage()) {
-      <p class="mt-3 rounded-lg border border-red-700 bg-red-950/30 p-3 text-sm text-red-200">
+      <p class="message message--compact message--error decks-page__feedback">
         {{ errorMessage() }}
       </p>
     }
 
     @if (successMessage()) {
-      <p class="mt-3 rounded-lg border border-emerald-700 bg-emerald-950/30 p-3 text-sm text-emerald-200">
+      <p class="message message--compact message--success decks-page__feedback">
         {{ successMessage() }}
       </p>
     }
   </section>
 
-  @if (hasDecks()) {
-    <section class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-zinc-800 bg-zinc-900 p-4">
-      <div>
-        <h2 class="text-sm font-semibold text-zinc-100">Organisation des decks</h2>
-        <p class="mt-1 text-sm text-zinc-400">Trie la liste pour presenter plus facilement ton travail.</p>
-      </div>
+  @if (decksLoading()) {
+    <p class="message message--muted">
+      Chargement des decks...
+    </p>
+  } @else if (decksLoadError()) {
+    <p class="message message--error">
+      {{ decksLoadError() }}
+    </p>
+  } @else if (hasDecks()) {
+    <section class="panel panel--compact decks-page__toolbar">
+      <h2 class="decks-page__toolbar-title">Organisation des decks</h2>
 
-      <div class="flex items-center gap-3">
-        <label for="deckSort" class="text-sm text-zinc-300">Trier par</label>
+      <div class="decks-page__toolbar-controls">
+        <label for="deckSort" class="form-label--muted">Trier par</label>
         <select
           #deckSortInput
           id="deckSort"
           [value]="selectedSort()"
-          class="rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100"
+          class="form-select decks-page__sort-select"
           (change)="onSortChange(deckSortInput.value)"
         >
           @for (sortOption of sortOptions; track sortOption.value) {
@@ -73,54 +75,48 @@
       </div>
     </section>
 
-    <div class="grid gap-4 md:grid-cols-2">
+    <div class="decks-page__grid">
       @for (deck of sortedDecks(); track deck.id) {
-        <article class="rounded-xl border border-zinc-800 bg-zinc-900 p-5">
-          <div class="flex items-start justify-between gap-3">
+        <article class="panel decks-page__deck-card">
+          <div class="decks-page__deck-header">
             <div>
-              <h2 class="text-lg font-semibold text-zinc-100">{{ deck.name }}</h2>
+              <h2 class="section-title">{{ deck.name }}</h2>
 
               @if (getValidationSummary(deck); as summary) {
                 @if (summary.statusTone === 'success') {
-                  <span
-                    class="mt-3 inline-flex rounded-full border border-emerald-700 bg-emerald-950/30 px-2 py-1 text-xs text-emerald-200"
-                  >
+                  <span class="badge badge--success decks-page__status-badge">
                     {{ summary.statusLabel }}
                   </span>
                 } @else if (summary.statusTone === 'warning') {
-                  <span
-                    class="mt-3 inline-flex rounded-full border border-amber-700 bg-amber-950/30 px-2 py-1 text-xs text-amber-200"
-                  >
+                  <span class="badge badge--warning decks-page__status-badge">
                     {{ summary.statusLabel }}
                   </span>
                 } @else {
-                  <span
-                    class="mt-3 inline-flex rounded-full border border-red-700 bg-red-950/30 px-2 py-1 text-xs text-red-200"
-                  >
+                  <span class="badge badge--danger decks-page__status-badge">
                     {{ summary.statusLabel }}
                   </span>
                 }
               }
             </div>
 
-            <span class="rounded-full border border-zinc-700 px-2 py-1 text-xs text-zinc-300">
+            <span class="count-pill">
               {{ getCardCount(deck) }} cartes
             </span>
           </div>
 
-          <p class="mt-3 text-sm text-zinc-300">Format: {{ deck.format }}</p>
+          <p class="body-text decks-page__format">Format: {{ deck.format }}</p>
 
-          <div class="mt-4 flex flex-wrap gap-3">
+          <div class="decks-page__actions">
             <a
               [routerLink]="['/decks', deck.id]"
-              class="inline-flex rounded-lg border border-zinc-700 px-3 py-2 text-sm font-medium text-amber-400 transition hover:border-amber-400/60 hover:bg-zinc-800/80"
+              class="link-button link-button--accent"
             >
               Voir le detail du deck
             </a>
 
             <button
               type="button"
-              class="inline-flex rounded-lg border border-red-700 px-3 py-2 text-sm font-medium text-red-200 transition hover:bg-red-950/30"
+              class="button button--danger"
               (click)="deleteDeck(deck)"
             >
               Supprimer
@@ -130,8 +126,8 @@
       }
     </div>
   } @else {
-    <p class="rounded-lg border border-dashed border-zinc-700 p-4 text-sm text-zinc-400">
-      Aucun deck pour le moment. Cree ton premier deck ci-dessus.
+    <p class="message message--muted">
+      Aucun deck pour le moment.
     </p>
   }
 </section>

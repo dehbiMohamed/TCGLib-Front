@@ -31,7 +31,15 @@ export interface DeckValidationSummary {
   isValid: boolean;
 }
 
+export const deckOperationReasons = {
+  added: 'added',
+  commanderSingleton: 'commander_singleton',
+  deckNotFound: 'deck_not_found',
+} as const;
+
+export type DeckOperationReason = (typeof deckOperationReasons)[keyof typeof deckOperationReasons];
+
 export interface AddCardToDeckResult {
   added: boolean;
-  reason: 'added' | 'commander_singleton' | 'deck_not_found';
+  reason: DeckOperationReason;
 }

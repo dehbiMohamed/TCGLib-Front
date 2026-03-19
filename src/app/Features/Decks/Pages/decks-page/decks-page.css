@@ -1,0 +1,91 @@
+:host {
+  display: block;
+}
+
+.decks-page__header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.decks-page__create-form {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.decks-page__create-button {
+  white-space: nowrap;
+}
+
+.decks-page__feedback {
+  margin-top: 0.75rem;
+}
+
+.decks-page__toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.decks-page__toolbar-title {
+  color: #f4f4f5;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.decks-page__toolbar-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.decks-page__sort-select {
+  min-width: 11rem;
+}
+
+.decks-page__grid {
+  display: grid;
+  gap: 1rem;
+}
+
+.decks-page__deck-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.decks-page__deck-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.decks-page__status-badge {
+  margin-top: 0.75rem;
+}
+
+.decks-page__format {
+  margin-top: 0.25rem;
+}
+
+.decks-page__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 0.25rem;
+}
+
+@media (min-width: 768px) {
+  .decks-page__create-form {
+    grid-template-columns: minmax(0, 1fr) 220px auto;
+  }
+
+  .decks-page__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

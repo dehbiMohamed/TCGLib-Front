@@ -1,134 +1,134 @@
-<section class="space-y-4">
+<section class="page card-detail-page">
   <a
     [routerLink]="backLink()"
-    class="inline-flex items-center gap-2 rounded-lg border border-zinc-700 px-3 py-2 text-sm text-zinc-300 transition hover:border-amber-400 hover:text-amber-400"
+    class="back-link"
   >
     {{ backLabel() }}
   </a>
 
   @if (loading()) {
-    <p class="rounded-lg border border-dashed border-zinc-700 p-4 text-sm text-zinc-400">
+    <p class="message message--muted">
       Chargement de la carte...
     </p>
   } @else if (errorMessage()) {
-    <p class="rounded-lg border border-red-700 bg-red-950/30 p-4 text-sm text-red-200">
+    <p class="message message--error">
       {{ errorMessage() }}
     </p>
   } @else if (card(); as currentCard) {
-    <section class="grid gap-4 xl:grid-cols-[220px,minmax(0,1fr),280px]">
-      <div class="mx-auto w-full max-w-[220px] rounded-xl border border-zinc-800 bg-zinc-900 p-3">
+    <section class="card-detail-page__layout">
+      <div class="panel panel--tight card-detail-page__visual">
         @if (currentCard.imageUrl) {
-          <div class="overflow-hidden rounded bg-zinc-950/40">
-            <img [src]="currentCard.imageUrl" [alt]="currentCard.name" class="w-full object-contain" />
+          <div class="card-detail-page__image-shell">
+            <img [src]="currentCard.imageUrl" [alt]="currentCard.name" class="card-detail-page__image" />
           </div>
         } @else {
-          <div class="flex aspect-[63/88] items-center justify-center rounded bg-zinc-800 text-sm text-zinc-400">
+          <div class="card-detail-page__image-placeholder">
             Image indisponible
           </div>
         }
       </div>
 
-      <div class="space-y-3">
-        <header class="space-y-2">
-          <div class="flex flex-wrap items-start justify-between gap-3">
-            <h1 class="text-2xl font-bold text-zinc-100 sm:text-3xl">{{ currentCard.name }}</h1>
+      <div class="card-detail-page__content">
+        <header class="card-detail-page__header">
+          <div class="card-detail-page__title-row">
+            <h1 class="page-title card-detail-page__title">{{ currentCard.name }}</h1>
 
             @if (currentCard.manaCost) {
-              <p class="rounded-lg border border-zinc-700 px-3 py-1 text-sm text-zinc-200">
+              <p class="card-detail-page__mana-cost">
                 {{ currentCard.manaCost }}
               </p>
             }
           </div>
 
-          <p class="text-zinc-300">{{ currentCard.typeLine }}</p>
+          <p class="body-text">{{ currentCard.typeLine }}</p>
         </header>
 
         @if (hasCardStats()) {
-          <section class="grid gap-3 sm:grid-cols-2">
+          <section class="card-detail-page__stats">
             @if (currentCard.power && currentCard.toughness) {
-              <div class="rounded-xl border border-zinc-800 bg-zinc-900 p-4">
-                <p class="text-xs uppercase tracking-wide text-zinc-500">Force / Endurance</p>
-                <p class="mt-1 text-sm text-zinc-200">{{ currentCard.power }} / {{ currentCard.toughness }}</p>
+              <div class="panel panel--compact">
+                <p class="stat-label">Force / Endurance</p>
+                <p class="stat-value">{{ currentCard.power }} / {{ currentCard.toughness }}</p>
               </div>
             }
 
             @if (currentCard.loyalty) {
-              <div class="rounded-xl border border-zinc-800 bg-zinc-900 p-4">
-                <p class="text-xs uppercase tracking-wide text-zinc-500">Loyaute</p>
-                <p class="mt-1 text-sm text-zinc-200">{{ currentCard.loyalty }}</p>
+              <div class="panel panel--compact">
+                <p class="stat-label">Loyaute</p>
+                <p class="stat-value">{{ currentCard.loyalty }}</p>
               </div>
             }
 
             @if (currentCard.releasedAt) {
-              <div class="rounded-xl border border-zinc-800 bg-zinc-900 p-4">
-                <p class="text-xs uppercase tracking-wide text-zinc-500">Date de sortie</p>
-                <p class="mt-1 text-sm text-zinc-200">{{ currentCard.releasedAt }}</p>
+              <div class="panel panel--compact">
+                <p class="stat-label">Date de sortie</p>
+                <p class="stat-value">{{ currentCard.releasedAt }}</p>
               </div>
             }
 
             @if (currentCard.collectorNumber) {
-              <div class="rounded-xl border border-zinc-800 bg-zinc-900 p-4">
-                <p class="text-xs uppercase tracking-wide text-zinc-500">Numero collecteur</p>
-                <p class="mt-1 text-sm text-zinc-200">{{ currentCard.collectorNumber }}</p>
+              <div class="panel panel--compact">
+                <p class="stat-label">Numero collecteur</p>
+                <p class="stat-value">{{ currentCard.collectorNumber }}</p>
               </div>
             }
           </section>
         }
 
-        <section class="rounded-xl border border-zinc-800 bg-zinc-900 p-4">
-          <h2 class="text-lg font-semibold text-zinc-100">Texte</h2>
+        <section class="panel panel--compact card-detail-page__text-panel">
+          <h2 class="section-title">Texte</h2>
 
           @if (currentCard.oracleText) {
-            <p class="mt-2 whitespace-pre-line text-sm leading-6 text-zinc-300">{{ currentCard.oracleText }}</p>
+            <p class="card-detail-page__oracle-text">{{ currentCard.oracleText }}</p>
           } @else {
-            <p class="mt-2 text-sm text-zinc-400">Aucun texte Oracle disponible.</p>
+            <p class="body-text--muted card-detail-page__text-empty">Aucun texte Oracle disponible.</p>
           }
 
           @if (currentCard.flavorText) {
-            <blockquote class="mt-4 border-l-2 border-zinc-700 pl-4 text-sm italic leading-6 text-zinc-400">
+            <blockquote class="card-detail-page__flavor-text">
               {{ currentCard.flavorText }}
             </blockquote>
           }
         </section>
       </div>
 
-      <div class="space-y-3">
-        <section class="grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
-          <div class="rounded-xl border border-zinc-800 bg-zinc-900 p-4">
-            <p class="text-xs uppercase tracking-wide text-zinc-500">Edition</p>
-            <p class="mt-1 text-sm text-zinc-200">{{ currentCard.setName }}</p>
+      <div class="card-detail-page__sidebar">
+        <section class="card-detail-page__meta-grid">
+          <div class="panel panel--compact">
+            <p class="stat-label">Edition</p>
+            <p class="stat-value">{{ currentCard.setName }}</p>
           </div>
 
-          <div class="rounded-xl border border-zinc-800 bg-zinc-900 p-4">
-            <p class="text-xs uppercase tracking-wide text-zinc-500">Code edition</p>
-            <p class="mt-1 text-sm text-zinc-200">{{ currentCard.setCode || 'Inconnu' }}</p>
+          <div class="panel panel--compact">
+            <p class="stat-label">Code edition</p>
+            <p class="stat-value">{{ currentCard.setCode || 'Inconnu' }}</p>
           </div>
 
-          <div class="rounded-xl border border-zinc-800 bg-zinc-900 p-4">
-            <p class="text-xs uppercase tracking-wide text-zinc-500">Rarete</p>
-            <p class="mt-1 text-sm capitalize text-zinc-200">{{ currentCard.rarity }}</p>
+          <div class="panel panel--compact">
+            <p class="stat-label">Rarete</p>
+            <p class="stat-value card-detail-page__meta-value--capitalize">{{ currentCard.rarity }}</p>
           </div>
 
-          <div class="rounded-xl border border-zinc-800 bg-zinc-900 p-4">
-            <p class="text-xs uppercase tracking-wide text-zinc-500">Couleurs</p>
-            <p class="mt-1 text-sm text-zinc-200">{{ colorLabel() }}</p>
+          <div class="panel panel--compact">
+            <p class="stat-label">Couleurs</p>
+            <p class="stat-value">{{ colorLabel() }}</p>
           </div>
 
-          <div class="rounded-xl border border-zinc-800 bg-zinc-900 p-4">
-            <p class="text-xs uppercase tracking-wide text-zinc-500">Illustrateur</p>
-            <p class="mt-1 text-sm text-zinc-200">{{ currentCard.artist || 'Inconnu' }}</p>
+          <div class="panel panel--compact">
+            <p class="stat-label">Illustrateur</p>
+            <p class="stat-value">{{ currentCard.artist || 'Inconnu' }}</p>
           </div>
         </section>
 
-        <section class="rounded-xl border border-zinc-800 bg-zinc-900 p-4">
-          <h2 class="text-lg font-semibold text-zinc-100">Ajouter au deck</h2>
+        <section class="panel panel--compact card-detail-page__deck-panel">
+          <h2 class="section-title">Ajouter au deck</h2>
 
           @if (hasDecks()) {
-            <div class="mt-3 flex flex-wrap gap-2">
+            <div class="card-detail-page__deck-actions">
               @for (deck of decks(); track deck.id) {
                 <button
                   type="button"
-                  class="rounded-lg border border-zinc-700 px-3 py-2 text-xs text-zinc-200 transition hover:border-amber-400 hover:text-amber-300 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-zinc-700 disabled:hover:text-zinc-200"
+                  class="button button--secondary button--small"
                   [disabled]="!canAddCardToDeck(deck.id)"
                   (click)="addCardToDeck(deck.id)"
                 >
@@ -143,22 +143,22 @@
 
             @if (addToDeckMessage()) {
               @if (addToDeckMessageTone() === 'success') {
-                <p class="mt-3 rounded-lg border border-emerald-700 bg-emerald-950/30 p-3 text-xs text-emerald-200">
+                <p class="message message--compact message--success card-detail-page__deck-message">
                   {{ addToDeckMessage() }}
                 </p>
               } @else {
-                <p class="mt-3 rounded-lg border border-amber-700 bg-amber-950/30 p-3 text-xs text-amber-200">
+                <p class="message message--compact message--warning card-detail-page__deck-message">
                   {{ addToDeckMessage() }}
                 </p>
               }
             }
           } @else {
-            <p class="mt-3 text-sm text-zinc-400">
+            <p class="body-text--muted card-detail-page__empty-decks">
               Cree d'abord un deck depuis la page des decks pour pouvoir ajouter cette carte.
             </p>
             <a
               routerLink="/decks"
-              class="mt-3 inline-flex rounded-lg border border-zinc-700 px-3 py-2 text-sm text-zinc-200 transition hover:border-amber-400 hover:text-amber-300"
+              class="link-button link-button--secondary card-detail-page__deck-link"
             >
               Aller a mes decks
             </a>
@@ -166,13 +166,13 @@
         </section>
 
         @if (currentCard.scryfallUri) {
-          <section class="rounded-xl border border-zinc-800 bg-zinc-900 p-4">
-            <h2 class="text-lg font-semibold text-zinc-100">Source</h2>
+          <section class="panel panel--compact card-detail-page__source-panel">
+            <h2 class="section-title">Source</h2>
             <a
               [href]="currentCard.scryfallUri"
               target="_blank"
               rel="noreferrer"
-              class="mt-3 inline-flex rounded-lg border border-zinc-700 px-3 py-2 text-sm text-zinc-200 transition hover:border-amber-400 hover:text-amber-300"
+              class="link-button link-button--secondary card-detail-page__source-link"
             >
               Voir la fiche Scryfall
             </a>

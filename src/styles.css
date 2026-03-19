@@ -1,3 +1,165 @@
 /* You can add global styles to this file, and also import other style files */
 
 @import 'tailwindcss';
+
+@layer components {
+  .page {
+    @apply space-y-6;
+  }
+
+  .page--spacious {
+    @apply space-y-8 py-8;
+  }
+
+  .page-title {
+    @apply text-2xl font-bold text-zinc-100;
+  }
+
+  .section-title {
+    @apply text-lg font-semibold text-zinc-100;
+  }
+
+  .panel {
+    @apply rounded-xl border border-zinc-800 bg-zinc-900 p-5;
+  }
+
+  .panel--compact {
+    @apply p-4;
+  }
+
+  .panel--soft {
+    @apply bg-zinc-950/40;
+  }
+
+  .panel--tight {
+    @apply p-3;
+  }
+
+  .form-label {
+    @apply block text-sm font-medium text-zinc-200;
+  }
+
+  .form-label--muted {
+    @apply text-sm text-zinc-300;
+  }
+
+  .form-input,
+  .form-select {
+    @apply rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-zinc-100;
+  }
+
+  .form-input--full,
+  .form-select--full {
+    @apply w-full;
+  }
+
+  .button {
+    @apply inline-flex items-center justify-center rounded-lg px-3 py-2 text-sm font-medium transition;
+  }
+
+  .button--primary {
+    @apply bg-amber-400 text-zinc-950 hover:bg-amber-300;
+  }
+
+  .button--secondary {
+    @apply border border-zinc-700 text-zinc-200 hover:border-amber-400 hover:text-amber-300;
+  }
+
+  .button--danger {
+    @apply border border-red-700 text-red-200 hover:bg-red-950/30;
+  }
+
+  .button--secondary:disabled {
+    @apply cursor-not-allowed opacity-50 hover:border-zinc-700 hover:text-zinc-200;
+  }
+
+  .button--small {
+    @apply px-3 py-2 text-xs;
+  }
+
+  .button--icon {
+    @apply text-lg;
+  }
+
+  .link-button {
+    @apply inline-flex items-center justify-center rounded-lg px-3 py-2 text-sm font-medium transition;
+  }
+
+  .link-button--accent {
+    @apply border border-zinc-700 text-amber-400 hover:border-amber-400/60 hover:bg-zinc-800/80;
+  }
+
+  .link-button--secondary {
+    @apply border border-zinc-700 text-zinc-200 hover:border-amber-400 hover:text-amber-300;
+  }
+
+  .back-link {
+    @apply inline-flex items-center gap-2 rounded-lg border border-zinc-700 px-3 py-2 text-sm text-zinc-300 transition hover:border-amber-400 hover:text-amber-400;
+  }
+
+  .message {
+    @apply rounded-lg border p-4 text-sm;
+  }
+
+  .message--compact {
+    @apply p-3;
+  }
+
+  .message--error {
+    @apply border-red-700 bg-red-950/30 text-red-200;
+  }
+
+  .message--success {
+    @apply border-emerald-700 bg-emerald-950/30 text-emerald-200;
+  }
+
+  .message--warning {
+    @apply border-amber-700 bg-amber-950/30 text-amber-200;
+  }
+
+  .message--muted {
+    @apply border-dashed border-zinc-700 text-zinc-400;
+  }
+
+  .badge {
+    @apply inline-flex rounded-full border px-2 py-1 text-xs;
+  }
+
+  .badge--success {
+    @apply border-emerald-700 bg-emerald-950/30 text-emerald-200;
+  }
+
+  .badge--warning {
+    @apply border-amber-700 bg-amber-950/30 text-amber-200;
+  }
+
+  .badge--danger {
+    @apply border-red-700 bg-red-950/30 text-red-200;
+  }
+
+  .count-pill {
+    @apply rounded-full border border-zinc-700 px-2 py-1 text-xs text-zinc-300;
+  }
+
+  .stat-label {
+    @apply text-xs uppercase tracking-wide text-zinc-500;
+  }
+
+  .stat-value {
+    @apply mt-1 text-sm text-zinc-200;
+  }
+
+  .body-text {
+    @apply text-sm text-zinc-300;
+  }
+
+  .body-text--muted {
+    @apply text-sm text-zinc-400;
+  }
+}
+
+@media (min-width: 640px) {
+  .page-title {
+    @apply text-3xl;
+  }
+}

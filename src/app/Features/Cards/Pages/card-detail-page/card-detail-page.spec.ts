@@ -60,7 +60,7 @@ describe('CardDetailPage', () => {
     };
     deckServiceStub = {
       decks: signal<Deck[]>([]),
-      addCardToDeck: vi.fn().mockReturnValue({ added: true, reason: 'added' }),
+      addCardToDeck: vi.fn().mockReturnValue(of({ added: true, reason: 'added' })),
       findDeckById: vi.fn().mockReturnValue(undefined),
       canAddCardToDeck: vi.fn().mockReturnValue(true),
     };
@@ -121,5 +121,17 @@ describe('CardDetailPage', () => {
 
     expect(component.backLabel()).toBe('Retour au deck');
     expect(backLink?.getAttribute('href')).toBe('/decks/test-deck');
+  });
+
+  it('should return to the home page when the card is opened from home', async () => {
+    routeQueryParamMap$.next(convertToParamMap({ fromHome: '1' }));
+    cardSearchServiceStub.getCardById.mockReturnValue(of(mockCard));
+
+    await createComponent();
+
+    const backLink = fixture.nativeElement.querySelector('a') as HTMLAnchorElement | null;
+
+    expect(component.backLabel()).toBe('Retour a l accueil');
+    expect(backLink?.getAttribute('href')).toBe('/');
   });
 });

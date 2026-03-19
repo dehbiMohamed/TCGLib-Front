@@ -1,51 +1,47 @@
-<section class="space-y-6">
-  <h1 class="text-2xl font-bold text-zinc-100 sm:text-3xl">Recherche de cartes</h1>
+<section class="page cards-page">
+  <h1 class="page-title">Recherche de cartes</h1>
 
-  <section class="rounded-xl border border-zinc-800 bg-zinc-900 p-5">
-    <label for="cardQuery" class="mb-2 block text-sm font-medium text-zinc-200">Nom de carte</label>
+  <section class="panel cards-page__search-panel">
+    <label for="cardQuery" class="form-label cards-page__search-label">Nom de carte</label>
     <input
       #queryInput
       id="cardQuery"
       type="text"
       placeholder="Ex: Black Lotus ou Counterspell"
-      class="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-zinc-100"
+      class="form-input form-input--full"
       (input)="onQueryChange(queryInput.value)"
     />
-    <p class="mt-2 text-sm text-zinc-400">Recherche en anglais uniquement.</p>
   </section>
 
   @if (errorMessage()) {
-    <p class="rounded-lg border border-red-700 bg-red-950/30 p-4 text-sm text-red-200">
+    <p class="message message--error">
       {{ errorMessage() }}
     </p>
   }
 
   @if (loading()) {
-    <p class="rounded-lg border border-dashed border-zinc-700 p-4 text-sm text-zinc-400">
+    <p class="message message--muted">
       Recherche en cours...
     </p>
   }
 
   @if (showEmptyState()) {
-    <p class="rounded-lg border border-dashed border-zinc-700 p-4 text-sm text-zinc-400">
+    <p class="message message--muted">
       Aucun resultat.
     </p>
   }
 
   @if (hasCards()) {
-    <section class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-zinc-800 bg-zinc-900 p-4">
-      <div>
-        <h2 class="text-sm font-semibold text-zinc-100">Organisation des cartes</h2>
-        <p class="mt-1 text-sm text-zinc-400">Trie les resultats pour comparer plus facilement les cartes trouvees.</p>
-      </div>
+    <section class="panel panel--compact cards-page__toolbar">
+      <h2 class="cards-page__toolbar-title">Organisation des cartes</h2>
 
-      <div class="flex items-center gap-3">
-        <label for="cardSort" class="text-sm text-zinc-300">Trier par</label>
+      <div class="cards-page__toolbar-controls">
+        <label for="cardSort" class="form-label--muted">Trier par</label>
         <select
           #cardSortInput
           id="cardSort"
           [value]="selectedSort()"
-          class="rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100"
+          class="form-select cards-page__sort-select"
           (change)="onSortChange(cardSortInput.value)"
         >
           @for (sortOption of sortOptions; track sortOption.value) {
@@ -57,29 +53,29 @@
       </div>
     </section>
 
-    <ul class="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-4">
+    <ul class="cards-page__grid">
       @for (card of sortedCards(); track card.id) {
         <li>
           <a
             [routerLink]="['/cards', card.id]"
-            class="block h-full rounded border border-zinc-700 bg-zinc-900 p-3 text-zinc-200 transition hover:-translate-y-0.5 hover:border-amber-400 hover:text-amber-100"
+            class="cards-page__card"
           >
             @if (card.imageUrl) {
-              <div class="mb-3 aspect-[63/88] w-full overflow-hidden rounded bg-zinc-950/40">
+              <div class="cards-page__card-media">
                 <img
                   [src]="card.imageUrl"
                   [alt]="card.name"
-                  class="h-full w-full object-contain"
+                  class="cards-page__card-image"
                   loading="lazy"
                 />
               </div>
             } @else {
-              <div class="mb-3 flex aspect-[63/88] w-full items-center justify-center rounded bg-zinc-800 text-sm text-zinc-400">
+              <div class="cards-page__card-placeholder">
                 Image indisponible
               </div>
             }
-            <p class="font-semibold">{{ card.name }}</p>
-            <p class="text-sm text-zinc-400">{{ card.setName }}</p>
+            <p class="cards-page__card-name">{{ card.name }}</p>
+            <p class="cards-page__card-set">{{ card.setName }}</p>
           </a>
         </li>
       }

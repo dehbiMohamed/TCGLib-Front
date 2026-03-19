@@ -1,11 +1,9 @@
-import { Component } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { take } from 'rxjs';
 
-interface QuickAction {
-  label: string;
-  description: string;
-  path: string;
-}
+import { CardListItem } from '../../../../Models/Card-List-Item';
+import { CardSearchService } from '../../../../Services/card-search-service';
 
 @Component({
   selector: 'app-home-page',
@@ -14,21 +12,32 @@ interface QuickAction {
   styleUrl: './home-page.css',
 })
 export class HomePage {
-  readonly quickActions: QuickAction[] = [
-  {
-    label: 'Rechercher des Cartes',
-      description: 'Préparer l’écran de recherche pour Scryfall.',
-    path: '/cards'
-  },
-  {
-    label: 'Gérer mes decks',
-      description: 'Préparer la structure des decks pour les prochaines étapes.',
-      path: '/decks',
+  private readonly cardSearchService = inject(CardSearchService);
+  private readonly featuredCardsQuery = [
+    '!"Black Lotus"',
+    '!"Lightning Bolt"',
+    '!"Counterspell"',
+    '!"Sol Ring"',
+    '!"Birds of Paradise"',
+    '!"Dark Ritual"',
+    '!"Wrath of God"',
+    '!"Shivan Dragon"',
+  ].join(' or ');
+
+  readonly marqueeCopies = [0, 1];
+  readonly featuredCards = signal<CardListItem[]>([]);
+
+  constructor() {
+    this.cardSearchService
+      .searchCards(`(${this.featuredCardsQuery})`)
+      .pipe(take(1))
+      .subscribe({
+        next: (cards) => {
+          this.featuredCards.set(cards.filter((card) => Boolean(card.imageUrl)).slice(0, 8));
+        },
+        error: () => {
+          this.featuredCards.set([]);
+        },
+      });
   }
-];
- readonly dayOneChecklist: string[] = [
-    'Navigation globale fonctionnelle',
-    'Pages principales accessibles',
-    'Structure prête pour les features du jour 2',
-  ];
 }

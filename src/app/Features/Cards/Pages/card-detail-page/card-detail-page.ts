@@ -3,6 +3,7 @@ import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-i
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { catchError, distinctUntilChanged, map, of, switchMap, tap } from 'rxjs';
 import { CardDetails } from '../../../../Models/Card-Details';
+import { deckOperationReasons } from '../../../../Models/Deck';
 import { CardSearchService } from '../../../../Services/card-search-service';
 import { DeckService } from '../../../../Services/deck-service';
 
@@ -23,6 +24,9 @@ export class CardDetailPage {
   readonly returnDeckId = toSignal(this.route.queryParamMap.pipe(map((params) => params.get('fromDeckId') ?? '')), {
     initialValue: '',
   });
+  readonly returnHome = toSignal(this.route.queryParamMap.pipe(map((params) => params.get('fromHome') === '1')), {
+    initialValue: false,
+  });
   readonly card = signal<CardDetails | null>(null);
   readonly loading = signal(true);
   readonly errorMessage = signal('');
@@ -30,8 +34,20 @@ export class CardDetailPage {
   readonly addToDeckMessageTone = signal<'success' | 'warning'>('success');
   readonly decks = this.deckService.decks;
   readonly hasDecks = computed(() => this.decks().length > 0);
-  readonly backLink = computed(() => (this.returnDeckId() ? ['/decks', this.returnDeckId()] : ['/cards']));
-  readonly backLabel = computed(() => (this.returnDeckId() ? 'Retour au deck' : 'Retour aux cartes'));
+  readonly backLink = computed(() => {
+    if (this.returnDeckId()) {
+      return ['/decks', this.returnDeckId()];
+    }
+
+    return this.returnHome() ? ['/'] : ['/cards'];
+  });
+  readonly backLabel = computed(() => {
+    if (this.returnDeckId()) {
+      return 'Retour au deck';
+    }
+
+    return this.returnHome() ? 'Retour a l accueil' : 'Retour aux cartes';
+  });
   readonly colorLabel = computed(() => {
     const currentCard = this.card();
     if (!currentCard) {
@@ -98,26 +114,32 @@ export class CardDetailPage {
       return;
     }
 
-    const addResult = this.deckService.addCardToDeck(deckId, {
+    this.deckService.addCardToDeck(deckId, {
       id: currentCard.id,
       name: currentCard.name,
       imageUrl: currentCard.imageUrl,
+    }).subscribe({
+      next: (addResult) => {
+        const targetDeck = this.deckService.findDeckById(deckId);
+
+        if (addResult.added) {
+          this.addToDeckMessageTone.set('success');
+          this.addToDeckMessage.set(`${currentCard.name} ajoutee a ${targetDeck?.name ?? 'ce deck'}.`);
+          return;
+        }
+
+        if (addResult.reason === deckOperationReasons.commanderSingleton) {
+          this.addToDeckMessageTone.set('warning');
+          this.addToDeckMessage.set(
+            `${currentCard.name} est deja dans ${targetDeck?.name ?? 'ce deck Commander'}. Une seule copie est autorisee dans cette version simple du projet.`
+          );
+        }
+      },
+      error: () => {
+        this.addToDeckMessageTone.set('warning');
+        this.addToDeckMessage.set('Impossible d ajouter cette carte au deck pour le moment.');
+      },
     });
-
-    const targetDeck = this.deckService.findDeckById(deckId);
-
-    if (addResult.added) {
-      this.addToDeckMessageTone.set('success');
-      this.addToDeckMessage.set(`${currentCard.name} ajoutee a ${targetDeck?.name ?? 'ce deck'}.`);
-      return;
-    }
-
-    if (addResult.reason === 'commander_singleton') {
-      this.addToDeckMessageTone.set('warning');
-      this.addToDeckMessage.set(
-        `${currentCard.name} est deja dans ${targetDeck?.name ?? 'ce deck Commander'}. Une seule copie est autorisee dans cette version simple du projet.`
-      );
-    }
   }
 
   canAddCardToDeck(deckId: string): boolean {

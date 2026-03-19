@@ -8,21 +8,33 @@ import express from 'express';
 import { join } from 'node:path';
 
 const browserDistFolder = join(import.meta.dirname, '../browser');
+const backendOrigin = (process.env['TCGLIB_API_URL'] ?? 'http://localhost:5059').replace(/\/$/, '');
 
 const app = express();
 const angularApp = new AngularNodeAppEngine();
 
 /**
- * Example Express Rest API endpoints can be defined here.
- * Uncomment and define endpoints as necessary.
- *
- * Example:
- * ```ts
- * app.get('/api/{*splat}', (req, res) => {
- *   // Handle API request
- * });
- * ```
+ * Proxy browser-side API calls to the .NET backend.
  */
+app.get('/api/{*splat}', async (req, res, next) => {
+  try {
+    const targetUrl = new URL(req.originalUrl, `${backendOrigin}/`);
+    const response = await fetch(targetUrl, {
+      headers: {
+        accept: req.headers.accept ?? 'application/json',
+      },
+    });
+    const contentType = response.headers.get('content-type');
+
+    if (contentType) {
+      res.setHeader('content-type', contentType);
+    }
+
+    res.status(response.status).send(await response.text());
+  } catch (error) {
+    next(error);
+  }
+});
 
 /**
  * Serve static files from /browser

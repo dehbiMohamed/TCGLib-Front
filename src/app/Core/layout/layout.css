@@ -1,0 +1,27 @@
+:host {
+  display: block;
+}
+
+.app-shell {
+  min-height: 100vh;
+  background: #18181b;
+  color: #f4f4f5;
+}
+
+.app-shell__content {
+  margin: 0 auto;
+  max-width: 80rem;
+  padding: 2rem 1rem;
+}
+
+@media (min-width: 640px) {
+  .app-shell__content {
+    padding-inline: 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .app-shell__content {
+    padding-inline: 2rem;
+  }
+}

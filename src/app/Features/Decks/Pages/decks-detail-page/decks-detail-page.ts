@@ -3,7 +3,7 @@ import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-i
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { catchError, debounceTime, distinctUntilChanged, map, of, switchMap, tap } from 'rxjs';
 import { CardListItem } from '../../../../Models/Card-List-Item';
-import { Deck, DeckCardEntry } from '../../../../Models/Deck';
+import { deckOperationReasons, Deck, DeckCardEntry } from '../../../../Models/Deck';
 import { CardSearchService } from '../../../../Services/card-search-service';
 import { DeckService } from '../../../../Services/deck-service';
 
@@ -24,6 +24,8 @@ export class DecksDetailPage {
     initialValue: '',
   });
   readonly deck = computed(() => this.deckService.findDeckById(this.deckId()) ?? null);
+  readonly decksLoading = this.deckService.loading;
+  readonly decksLoadError = this.deckService.loadError;
   readonly totalCards = computed(() => {
     const currentDeck = this.deck();
     return currentDeck ? this.deckService.getTotalCardCount(currentDeck) : 0;
@@ -163,16 +165,22 @@ export class DecksDetailPage {
       return;
     }
 
-    const addResult = this.deckService.addCardToDeck(currentDeck.id, {
+    this.deckService.addCardToDeck(currentDeck.id, {
       id: card.cardId,
       name: card.name,
       imageUrl: card.imageUrl,
+    }).subscribe({
+      next: (addResult) => {
+        if (!addResult.added && addResult.reason === deckOperationReasons.commanderSingleton) {
+          this.addCardMessageTone.set('warning');
+          this.addCardMessage.set('En Commander, une carte ne peut etre presente qu une seule fois.');
+        }
+      },
+      error: () => {
+        this.addCardMessageTone.set('warning');
+        this.addCardMessage.set('Impossible de modifier cette carte pour le moment.');
+      },
     });
-
-    if (!addResult.added && addResult.reason === 'commander_singleton') {
-      this.addCardMessageTone.set('warning');
-      this.addCardMessage.set('En Commander, une carte ne peut etre presente qu une seule fois.');
-    }
   }
 
   decreaseCardQuantity(cardId: string): void {
@@ -181,7 +189,12 @@ export class DecksDetailPage {
       return;
     }
 
-    this.deckService.removeCardFromDeck(currentDeck.id, cardId);
+    this.deckService.removeCardFromDeck(currentDeck.id, cardId).subscribe({
+      error: () => {
+        this.addCardMessageTone.set('warning');
+        this.addCardMessage.set('Impossible de modifier cette carte pour le moment.');
+      },
+    });
   }
 
   onSearchQueryChange(query: string): void {
@@ -194,24 +207,30 @@ export class DecksDetailPage {
       return;
     }
 
-    const addResult = this.deckService.addCardToDeck(currentDeck.id, {
+    this.deckService.addCardToDeck(currentDeck.id, {
       id: card.id,
       name: card.name,
       imageUrl: card.imageUrl,
+    }).subscribe({
+      next: (addResult) => {
+        if (addResult.added) {
+          this.addCardMessageTone.set('success');
+          this.addCardMessage.set(`${card.name} ajoutee au deck ${currentDeck.name}.`);
+          return;
+        }
+
+        if (addResult.reason === deckOperationReasons.commanderSingleton) {
+          this.addCardMessageTone.set('warning');
+          this.addCardMessage.set(
+            `${card.name} est deja dans ce deck Commander. Une seule copie est autorisee dans cette version simple du projet.`
+          );
+        }
+      },
+      error: () => {
+        this.addCardMessageTone.set('warning');
+        this.addCardMessage.set('Impossible d ajouter cette carte pour le moment.');
+      },
     });
-
-    if (addResult.added) {
-      this.addCardMessageTone.set('success');
-      this.addCardMessage.set(`${card.name} ajoutee au deck ${currentDeck.name}.`);
-      return;
-    }
-
-    if (addResult.reason === 'commander_singleton') {
-      this.addCardMessageTone.set('warning');
-      this.addCardMessage.set(
-        `${card.name} est deja dans ce deck Commander. Une seule copie est autorisee dans cette version simple du projet.`
-      );
-    }
   }
 
   canAddCard(cardId: string): boolean {
@@ -225,19 +244,25 @@ export class DecksDetailPage {
       return;
     }
 
-    const updatedDeck = this.deckService.updateDeck(currentDeck.id, { name, format });
+    this.deckService.updateDeck(currentDeck.id, { name, format }).subscribe({
+      next: (updatedDeck) => {
+        if (!updatedDeck) {
+          this.deckSettingsMessageTone.set('warning');
+          this.deckSettingsMessage.set('Entre un nom de deck et un format valides.');
+          return;
+        }
 
-    if (!updatedDeck) {
-      this.deckSettingsMessageTone.set('warning');
-      this.deckSettingsMessage.set('Entre un nom de deck et un format valides.');
-      return;
-    }
-
-    this.deckSettingsMessageTone.set('success');
-    this.deckSettingsMessage.set(
-      `Parametres du deck ${updatedDeck.name} mis a jour. Nouvelle regle: ${this.deckService.getDeckFormatRule(updatedDeck.format).ruleLabel}.`
-    );
-    this.showDeckSettings.set(false);
+        this.deckSettingsMessageTone.set('success');
+        this.deckSettingsMessage.set(
+          `Parametres du deck ${updatedDeck.name} mis a jour. Nouvelle regle: ${this.deckService.getDeckFormatRule(updatedDeck.format).ruleLabel}.`
+        );
+        this.showDeckSettings.set(false);
+      },
+      error: () => {
+        this.deckSettingsMessageTone.set('warning');
+        this.deckSettingsMessage.set('Impossible de mettre a jour ce deck pour le moment.');
+      },
+    });
   }
 
   deleteCurrentDeck(): void {
@@ -254,10 +279,16 @@ export class DecksDetailPage {
       return;
     }
 
-    const removed = this.deckService.removeDeck(currentDeck.id);
-
-    if (removed) {
-      void this.router.navigate(['/decks']);
-    }
+    this.deckService.removeDeck(currentDeck.id).subscribe({
+      next: (removed) => {
+        if (removed) {
+          void this.router.navigate(['/decks']);
+        }
+      },
+      error: () => {
+        this.deckSettingsMessageTone.set('warning');
+        this.deckSettingsMessage.set('Impossible de supprimer ce deck pour le moment.');
+      },
+    });
   }
 }

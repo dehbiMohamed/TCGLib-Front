@@ -1,87 +1,159 @@
 import { TestBed } from '@angular/core/testing';
 import { PLATFORM_ID } from '@angular/core';
-import { vi } from 'vitest';
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
+import { firstValueFrom } from 'rxjs';
 
+import { API_BASE_URL } from '../Core/config/api-base-url.token';
+import { Deck } from '../Models/Deck';
 import { DeckService } from './deck-service';
 
 describe('DeckService', () => {
   let service: DeckService;
-  let storageMock: {
-    getItem: ReturnType<typeof vi.fn>;
-    setItem: ReturnType<typeof vi.fn>;
-    removeItem: ReturnType<typeof vi.fn>;
-    clear: ReturnType<typeof vi.fn>;
+  let httpTestingController: HttpTestingController;
+
+  const standardDeck: Deck = {
+    id: 'izzet-spells-1',
+    name: 'Izzet Spells',
+    format: 'Modern',
+    createdAt: '2026-03-11T00:00:00.000Z',
+    cards: [],
   };
 
-  const createStorageMock = () => {
-    const storage = new Map<string, string>();
-
-    return {
-      getItem: vi.fn((key: string) => storage.get(key) ?? null),
-      setItem: vi.fn((key: string, value: string) => {
-        storage.set(key, value);
-      }),
-      removeItem: vi.fn((key: string) => {
-        storage.delete(key);
-      }),
-      clear: vi.fn(() => {
-        storage.clear();
-      }),
-    };
+  const commanderDeck: Deck = {
+    id: 'atraxa-value-1',
+    name: 'Atraxa Value',
+    format: 'Commander',
+    createdAt: '2026-03-12T00:00:00.000Z',
+    cards: [],
   };
+
+  function createService(initialDecks: Deck[] = []): void {
+    service = TestBed.inject(DeckService);
+    httpTestingController = TestBed.inject(HttpTestingController);
+
+    const request = httpTestingController.expectOne('/api/decks');
+    expect(request.request.method).toBe('GET');
+    request.flush(initialDecks);
+  }
 
   beforeEach(() => {
-    storageMock = createStorageMock();
-    vi.stubGlobal('localStorage', storageMock);
-
     TestBed.configureTestingModule({
       providers: [
         DeckService,
+        provideHttpClient(),
+        provideHttpClientTesting(),
         {
           provide: PLATFORM_ID,
           useValue: 'browser',
         },
+        {
+          provide: API_BASE_URL,
+          useValue: '/api',
+        },
       ],
     });
-
-    service = TestBed.inject(DeckService);
   });
 
   afterEach(() => {
-    vi.unstubAllGlobals();
+    httpTestingController.verify();
   });
 
-  it('should create a deck with trimmed name and format', () => {
-    const createdDeck = service.createDeck('  Esper Control  ', ' Standard ');
+  it('should load decks from the api on startup', () => {
+    createService([standardDeck]);
 
-    expect(createdDeck).not.toBeNull();
-    expect(createdDeck?.name).toBe('Esper Control');
-    expect(createdDeck?.format).toBe('Standard');
-    expect(service.decks()).toHaveLength(1);
-    expect(storageMock.setItem).toHaveBeenCalled();
+    expect(service.decks()).toEqual([standardDeck]);
+    expect(service.loading()).toBe(false);
+    expect(service.initialized()).toBe(true);
+    expect(service.loadError()).toBe('');
   });
 
-  it('should increase quantity when the same card is added twice in a non-commander deck', () => {
-    const deck = service.createDeck('Izzet Spells', 'Modern');
+  it('should create a deck with trimmed name and format', async () => {
+    createService();
 
-    expect(deck).not.toBeNull();
+    const createdDeck: Deck = {
+      id: 'esper-control-1',
+      name: 'Esper Control',
+      format: 'Standard',
+      createdAt: '2026-03-19T00:00:00.000Z',
+      cards: [],
+    };
 
-    const firstAdd = service.addCardToDeck(deck!.id, {
-      id: 'lightning-bolt',
-      name: 'Lightning Bolt',
-      imageUrl: 'https://example.test/lightning-bolt.jpg',
+    const resultPromise = firstValueFrom(service.createDeck('  Esper Control  ', ' Standard '));
+    const request = httpTestingController.expectOne('/api/decks');
+
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toEqual({
+      name: 'Esper Control',
+      format: 'Standard',
     });
-    const secondAdd = service.addCardToDeck(deck!.id, {
-      id: 'lightning-bolt',
-      name: 'Lightning Bolt',
-      imageUrl: 'https://example.test/lightning-bolt.jpg',
+
+    request.flush(createdDeck);
+
+    await expect(resultPromise).resolves.toEqual(createdDeck);
+    expect(service.decks()).toEqual([createdDeck]);
+  });
+
+  it('should increase quantity when the same card is added twice in a non-commander deck', async () => {
+    createService([standardDeck]);
+
+    const firstDeckVersion: Deck = {
+      ...standardDeck,
+      cards: [
+        {
+          cardId: 'lightning-bolt',
+          name: 'Lightning Bolt',
+          imageUrl: 'https://example.test/lightning-bolt.jpg',
+          quantity: 1,
+        },
+      ],
+    };
+    const secondDeckVersion: Deck = {
+      ...standardDeck,
+      cards: [
+        {
+          cardId: 'lightning-bolt',
+          name: 'Lightning Bolt',
+          imageUrl: 'https://example.test/lightning-bolt.jpg',
+          quantity: 2,
+        },
+      ],
+    };
+
+    const firstAddPromise = firstValueFrom(
+      service.addCardToDeck(standardDeck.id, {
+        id: 'lightning-bolt',
+        name: 'Lightning Bolt',
+        imageUrl: 'https://example.test/lightning-bolt.jpg',
+      })
+    );
+    const firstRequest = httpTestingController.expectOne(`/api/decks/${encodeURIComponent(standardDeck.id)}/cards`);
+
+    expect(firstRequest.request.method).toBe('POST');
+    firstRequest.flush({
+      added: true,
+      reason: 'added',
+      deck: firstDeckVersion,
     });
 
-    const updatedDeck = service.findDeckById(deck!.id);
+    await expect(firstAddPromise).resolves.toEqual({ added: true, reason: 'added' });
 
-    expect(firstAdd).toEqual({ added: true, reason: 'added' });
-    expect(secondAdd).toEqual({ added: true, reason: 'added' });
-    expect(updatedDeck?.cards).toEqual([
+    const secondAddPromise = firstValueFrom(
+      service.addCardToDeck(standardDeck.id, {
+        id: 'lightning-bolt',
+        name: 'Lightning Bolt',
+        imageUrl: 'https://example.test/lightning-bolt.jpg',
+      })
+    );
+    const secondRequest = httpTestingController.expectOne(`/api/decks/${encodeURIComponent(standardDeck.id)}/cards`);
+    secondRequest.flush({
+      added: true,
+      reason: 'added',
+      deck: secondDeckVersion,
+    });
+
+    await expect(secondAddPromise).resolves.toEqual({ added: true, reason: 'added' });
+    expect(service.findDeckById(standardDeck.id)?.cards).toEqual([
       {
         cardId: 'lightning-bolt',
         name: 'Lightning Bolt',
@@ -91,49 +163,88 @@ describe('DeckService', () => {
     ]);
   });
 
-  it('should block duplicate cards in a commander deck', () => {
-    const deck = service.createDeck('Atraxa Value', 'Commander');
+  it('should block duplicate cards in a commander deck', async () => {
+    createService([commanderDeck]);
 
-    expect(deck).not.toBeNull();
+    const deckWithCard: Deck = {
+      ...commanderDeck,
+      cards: [
+        {
+          cardId: 'sol-ring',
+          name: 'Sol Ring',
+          imageUrl: 'https://example.test/sol-ring.jpg',
+          quantity: 1,
+        },
+      ],
+    };
 
-    const firstAdd = service.addCardToDeck(deck!.id, {
-      id: 'sol-ring',
-      name: 'Sol Ring',
-      imageUrl: 'https://example.test/sol-ring.jpg',
+    const firstAddPromise = firstValueFrom(
+      service.addCardToDeck(commanderDeck.id, {
+        id: 'sol-ring',
+        name: 'Sol Ring',
+        imageUrl: 'https://example.test/sol-ring.jpg',
+      })
+    );
+    httpTestingController.expectOne(`/api/decks/${encodeURIComponent(commanderDeck.id)}/cards`).flush({
+      added: true,
+      reason: 'added',
+      deck: deckWithCard,
     });
-    const secondAdd = service.addCardToDeck(deck!.id, {
-      id: 'sol-ring',
-      name: 'Sol Ring',
-      imageUrl: 'https://example.test/sol-ring.jpg',
+
+    await expect(firstAddPromise).resolves.toEqual({ added: true, reason: 'added' });
+
+    const secondAddPromise = firstValueFrom(
+      service.addCardToDeck(commanderDeck.id, {
+        id: 'sol-ring',
+        name: 'Sol Ring',
+        imageUrl: 'https://example.test/sol-ring.jpg',
+      })
+    );
+    httpTestingController.expectOne(`/api/decks/${encodeURIComponent(commanderDeck.id)}/cards`).flush({
+      added: false,
+      reason: 'commander_singleton',
+      deck: deckWithCard,
     });
 
-    const updatedDeck = service.findDeckById(deck!.id);
-
-    expect(firstAdd).toEqual({ added: true, reason: 'added' });
-    expect(secondAdd).toEqual({ added: false, reason: 'commander_singleton' });
-    expect(updatedDeck?.cards).toHaveLength(1);
-    expect(updatedDeck?.cards[0].quantity).toBe(1);
+    await expect(secondAddPromise).resolves.toEqual({
+      added: false,
+      reason: 'commander_singleton',
+    });
+    expect(service.findDeckById(commanderDeck.id)?.cards).toHaveLength(1);
+    expect(service.findDeckById(commanderDeck.id)?.cards[0].quantity).toBe(1);
   });
 
-  it('should report duplicate cards as invalid after switching a deck to commander', () => {
-    const deck = service.createDeck('Rakdos Sacrifice', 'Standard');
+  it('should report duplicate cards as invalid after switching a deck to commander', async () => {
+    const duplicateDeck: Deck = {
+      ...standardDeck,
+      cards: [
+        {
+          cardId: 'fatal-push',
+          name: 'Fatal Push',
+          imageUrl: 'https://example.test/fatal-push.jpg',
+          quantity: 2,
+        },
+      ],
+    };
 
-    expect(deck).not.toBeNull();
+    createService([duplicateDeck]);
 
-    service.addCardToDeck(deck!.id, {
-      id: 'fatal-push',
-      name: 'Fatal Push',
-      imageUrl: 'https://example.test/fatal-push.jpg',
-    });
-    service.addCardToDeck(deck!.id, {
-      id: 'fatal-push',
-      name: 'Fatal Push',
-      imageUrl: 'https://example.test/fatal-push.jpg',
-    });
-    service.updateDeck(deck!.id, { name: 'Rakdos Sacrifice', format: 'Commander' });
+    const updatedCommanderDeck: Deck = {
+      ...duplicateDeck,
+      format: 'Commander',
+    };
 
-    const updatedDeck = service.findDeckById(deck!.id);
-    const summary = service.getDeckValidationSummary(updatedDeck!);
+    const resultPromise = firstValueFrom(
+      service.updateDeck(duplicateDeck.id, { name: duplicateDeck.name, format: 'Commander' })
+    );
+    const request = httpTestingController.expectOne(`/api/decks/${encodeURIComponent(duplicateDeck.id)}`);
+
+    expect(request.request.method).toBe('PUT');
+    request.flush(updatedCommanderDeck);
+
+    await expect(resultPromise).resolves.toEqual(updatedCommanderDeck);
+
+    const summary = service.getDeckValidationSummary(service.findDeckById(duplicateDeck.id)!);
 
     expect(summary.isValid).toBe(false);
     expect(summary.statusTone).toBe('danger');

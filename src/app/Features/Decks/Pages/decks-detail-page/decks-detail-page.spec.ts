@@ -16,6 +16,8 @@ describe('DecksDetailPage', () => {
   let router: Router;
   let deckServiceStub: {
     decks: ReturnType<typeof signal<Deck[]>>;
+    loading: ReturnType<typeof signal<boolean>>;
+    loadError: ReturnType<typeof signal<string>>;
     findDeckById: ReturnType<typeof vi.fn>;
     getDeckFormatRule: ReturnType<typeof vi.fn>;
     updateDeck: ReturnType<typeof vi.fn>;
@@ -61,6 +63,8 @@ describe('DecksDetailPage', () => {
 
     deckServiceStub = {
       decks: decksState,
+      loading: signal(false),
+      loadError: signal(''),
       findDeckById: vi.fn().mockImplementation((deckId: string) => decksState().find((deck) => deck.id === deckId)),
       getDeckFormatRule: vi.fn().mockImplementation((format: string) =>
         format === 'Commander'
@@ -86,23 +90,23 @@ describe('DecksDetailPage', () => {
         };
 
         decksState.set(decksState().map((deck) => (deck.id === deckId ? updatedDeck : deck)));
-        return updatedDeck;
+        return of(updatedDeck);
       }),
       getTotalCardCount: vi.fn().mockImplementation((deck: Deck) =>
         deck.cards.reduce((total, card) => total + card.quantity, 0)
       ),
       getDeckValidationSummary: vi.fn().mockImplementation(() => mockSummary),
-      addCardToDeck: vi.fn().mockReturnValue({ added: true, reason: 'added' }),
-      removeCardFromDeck: vi.fn(),
+      addCardToDeck: vi.fn().mockReturnValue(of({ added: true, reason: 'added' })),
+      removeCardFromDeck: vi.fn().mockReturnValue(of(true)),
       canAddCardToDeck: vi.fn().mockReturnValue(true),
       removeDeck: vi.fn().mockImplementation((deckId: string) => {
         const hasDeck = decksState().some((deck) => deck.id === deckId);
         if (!hasDeck) {
-          return false;
+          return of(false);
         }
 
         decksState.set(decksState().filter((deck) => deck.id !== deckId));
-        return true;
+        return of(true);
       }),
     };
     cardSearchServiceStub = {

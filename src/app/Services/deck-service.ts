@@ -1,35 +1,65 @@
 import { isPlatformBrowser } from '@angular/common';
+import { HttpErrorResponse, HttpClient } from '@angular/common/http';
 import { inject, Injectable, PLATFORM_ID, signal } from '@angular/core';
-import { AddCardToDeckResult, Deck, DeckCardEntry, DeckFormatRule, DeckValidationSummary } from '../Models/Deck';
+import { catchError, finalize, forkJoin, map, Observable, of, switchMap, tap, throwError } from 'rxjs';
+import { API_BASE_URL } from '../Core/config/api-base-url.token';
+import {
+  AddCardToDeckResult,
+  deckOperationReasons,
+  Deck,
+  DeckCardEntry,
+  DeckFormatRule,
+  DeckValidationSummary,
+} from '../Models/Deck';
+
+interface AddCardToDeckApiResponse {
+  added: boolean;
+  reason: AddCardToDeckResult['reason'];
+  deck: Deck | null;
+}
 
 @Injectable({
   providedIn: 'root',
 })
 export class DeckService {
   private readonly platformId = inject(PLATFORM_ID);
-  private readonly storageKey = 'tcg-libe.decks';
-  private readonly decksState = signal<Deck[]>(this.loadDecks());
+  private readonly http = inject(HttpClient);
+  private readonly apiBaseUrl = inject(API_BASE_URL);
+  private readonly decksApiUrl = `${this.apiBaseUrl}/decks`;
+  private readonly legacyStorageKey = 'tcg-libe.decks';
+  private readonly decksState = signal<Deck[]>([]);
+  private readonly loadingState = signal(false);
+  private readonly initializedState = signal(false);
+  private readonly loadErrorState = signal('');
 
   readonly decks = this.decksState.asReadonly();
+  readonly loading = this.loadingState.asReadonly();
+  readonly initialized = this.initializedState.asReadonly();
+  readonly loadError = this.loadErrorState.asReadonly();
 
-  createDeck(name: string, format: string): Deck | null {
+  constructor() {
+    if (!isPlatformBrowser(this.platformId)) {
+      this.initializedState.set(true);
+      return;
+    }
+
+    this.loadDecks();
+  }
+
+  createDeck(name: string, format: string): Observable<Deck | null> {
     const trimmedName = name.trim();
     const trimmedFormat = format.trim();
 
     if (!trimmedName || !trimmedFormat) {
-      return null;
+      return of(null);
     }
 
-    const newDeck: Deck = {
-      id: this.buildDeckId(trimmedName),
+    return this.http.post<Deck>(this.decksApiUrl, {
       name: trimmedName,
       format: trimmedFormat,
-      createdAt: new Date().toISOString(),
-      cards: [],
-    };
-
-    this.updateDecks((decks) => [...decks, newDeck]);
-    return newDeck;
+    }).pipe(
+      tap((deck) => this.applyDeckUpdate(deck))
+    );
   }
 
   findDeckById(deckId: string): Deck | undefined {
@@ -58,124 +88,63 @@ export class DeckService {
     };
   }
 
-  updateDeck(deckId: string, updates: { name: string; format: string }): Deck | null {
+  updateDeck(deckId: string, updates: { name: string; format: string }): Observable<Deck | null> {
     const trimmedName = updates.name.trim();
     const trimmedFormat = updates.format.trim();
 
     if (!trimmedName || !trimmedFormat) {
-      return null;
+      return of(null);
     }
 
-    let updatedDeck: Deck | null = null;
-
-    this.updateDecks((decks) =>
-      decks.map((deck) => {
-        if (deck.id !== deckId) {
-          return deck;
-        }
-
-        updatedDeck = {
-          ...deck,
-          name: trimmedName,
-          format: trimmedFormat,
-        };
-
-        return updatedDeck;
-      })
+    return this.http.put<Deck>(this.getDeckUrl(deckId), {
+      name: trimmedName,
+      format: trimmedFormat,
+    }).pipe(
+      tap((deck) => this.applyDeckUpdate(deck))
     );
-
-    return updatedDeck;
   }
 
-  removeDeck(deckId: string): boolean {
-    const currentDecks = this.decksState();
-    const nextDecks = currentDecks.filter((deck) => deck.id !== deckId);
-
-    if (nextDecks.length === currentDecks.length) {
-      return false;
-    }
-
-    this.decksState.set(nextDecks);
-    this.persistDecks(nextDecks);
-    return true;
-  }
-
-  addCardToDeck(deckId: string, card: { id: string; name: string; imageUrl: string }): AddCardToDeckResult {
-    let addResult: AddCardToDeckResult = {
-      added: false,
-      reason: 'deck_not_found',
-    };
-
-    this.updateDecks((decks) =>
-      decks.map((deck) => {
-        if (deck.id !== deckId) {
-          return deck;
-        }
-
-        const existingCard = deck.cards.find((entry) => entry.cardId === card.id);
-        const commanderDuplicateBlocked = this.isCommanderDeck(deck) && existingCard;
-
-        if (commanderDuplicateBlocked) {
-          addResult = {
-            added: false,
-            reason: 'commander_singleton',
-          };
-
-          return deck;
-        }
-
-        if (existingCard) {
-          addResult = {
-            added: true,
-            reason: 'added',
-          };
-
-          return {
-            ...deck,
-            cards: deck.cards.map((entry) =>
-              entry.cardId === card.id ? { ...entry, quantity: entry.quantity + 1 } : entry
-            ),
-          };
-        }
-
-        const newCard: DeckCardEntry = {
-          cardId: card.id,
-          name: card.name,
-          imageUrl: card.imageUrl,
-          quantity: 1,
-        };
-
-        addResult = {
-          added: true,
-          reason: 'added',
-        };
-
-        return {
-          ...deck,
-          cards: [...deck.cards, newCard],
-        };
-      })
+  removeDeck(deckId: string): Observable<boolean> {
+    return this.http.delete<void>(this.getDeckUrl(deckId)).pipe(
+      map(() => true),
+      tap(() => {
+        this.decksState.update((decks) => decks.filter((deck) => deck.id !== deckId));
+        this.clearLoadError();
+      }),
+      catchError(this.fallbackOnNotFound(false))
     );
-
-    return addResult;
   }
 
-  removeCardFromDeck(deckId: string, cardId: string): void {
-    this.updateDecks((decks) =>
-      decks.map((deck) => {
-        if (deck.id !== deckId) {
-          return deck;
+  addCardToDeck(deckId: string, card: { id: string; name: string; imageUrl: string }): Observable<AddCardToDeckResult> {
+    return this.http.post<AddCardToDeckApiResponse>(
+      this.getDeckCardsUrl(deckId),
+      {
+        cardId: card.id,
+        name: card.name,
+        imageUrl: card.imageUrl,
+      }
+    ).pipe(
+      tap((response) => {
+        if (response.deck) {
+          this.applyDeckUpdate(response.deck);
         }
+      }),
+      map((response) => ({
+        added: response.added,
+        reason: response.reason,
+      })),
+      catchError(this.fallbackOnNotFound({
+        added: false,
+        reason: deckOperationReasons.deckNotFound,
+      }))
+    );
+  }
 
-        return {
-          ...deck,
-          cards: deck.cards
-            .map((entry) =>
-              entry.cardId === cardId ? { ...entry, quantity: entry.quantity - 1 } : entry
-            )
-            .filter((entry) => entry.quantity > 0),
-        };
-      })
+  removeCardFromDeck(deckId: string, cardId: string): Observable<boolean> {
+    return this.http.delete<Deck>(this.getDeckCardsUrl(deckId, cardId)).pipe(
+      tap((deck) => this.applyDeckUpdate(deck)),
+      map(() => true),
+      catchError(this.fallbackOnNotFound(false))
     );
   }
 
@@ -239,18 +208,6 @@ export class DeckService {
         };
       }
 
-      if (duplicatedCards.length > 0) {
-        return {
-          totalCards,
-          targetCardCount: rule.targetCardCount,
-          ruleLabel: rule.ruleLabel,
-          statusLabel: 'Trop de cartes',
-          statusTone: 'danger',
-          detailMessage: `${totalCards - rule.targetCardCount} cartes en trop pour rester a ${rule.targetCardCount}.`,
-          isValid: false,
-        };
-      }
-
       return {
         totalCards,
         targetCardCount: rule.targetCardCount,
@@ -285,22 +242,67 @@ export class DeckService {
     };
   }
 
-  private updateDecks(updater: (decks: Deck[]) => Deck[]): void {
-    const nextDecks = updater(this.decksState());
-    this.decksState.set(nextDecks);
-    this.persistDecks(nextDecks);
+  private loadDecks(): void {
+    this.loadingState.set(true);
+    this.loadErrorState.set('');
+
+    this.fetchDecksWithLegacyMigration().pipe(
+      finalize(() => {
+        this.loadingState.set(false);
+        this.initializedState.set(true);
+      })
+    ).subscribe({
+      next: (decks) => {
+        this.decksState.set(decks);
+        this.clearLoadError();
+      },
+      error: () => {
+        this.loadErrorState.set('Impossible de charger les decks pour le moment.');
+      },
+    });
   }
 
-  private isCommanderDeck(deck: Deck): boolean {
-    return deck.format.trim().toLowerCase() === 'commander';
+  private fetchDecksWithLegacyMigration(): Observable<Deck[]> {
+    return this.http.get<Deck[]>(this.decksApiUrl).pipe(
+      switchMap((decks) => {
+        if (decks.length > 0) {
+          return of(decks);
+        }
+
+        const legacyDecks = this.loadLegacyDecks();
+        if (legacyDecks.length === 0) {
+          return of([]);
+        }
+
+        return forkJoin(
+          legacyDecks.map((deck) =>
+            this.http.post<Deck>(this.decksApiUrl, {
+              id: deck.id,
+              name: deck.name,
+              format: deck.format,
+              createdAt: deck.createdAt,
+              cards: deck.cards.map((card) => ({
+                cardId: card.cardId,
+                name: card.name,
+                imageUrl: card.imageUrl,
+                quantity: card.quantity,
+              })),
+            })
+          )
+        ).pipe(
+          switchMap(() => this.http.get<Deck[]>(this.decksApiUrl)),
+          tap(() => this.clearLegacyDecks())
+        );
+      })
+    );
   }
 
-  private loadDecks(): Deck[] {
+  private loadLegacyDecks(): Deck[] {
     if (!this.canUseStorage()) {
       return [];
     }
 
-    const rawDecks = localStorage.getItem(this.storageKey);
+    const rawDecks = localStorage.getItem(this.legacyStorageKey);
     if (!rawDecks) {
       return [];
     }
@@ -313,12 +315,12 @@ export class DeckService {
     }
   }
 
-  private persistDecks(decks: Deck[]): void {
+  private clearLegacyDecks(): void {
     if (!this.canUseStorage()) {
       return;
     }
 
-    localStorage.setItem(this.storageKey, JSON.stringify(decks));
+    localStorage.removeItem(this.legacyStorageKey);
   }
 
   private canUseStorage(): boolean {
@@ -326,18 +328,52 @@ export class DeckService {
       isPlatformBrowser(this.platformId) &&
       typeof localStorage !== 'undefined' &&
       typeof localStorage.getItem === 'function' &&
-      typeof localStorage.setItem === 'function'
+      typeof localStorage.removeItem === 'function'
     );
   }
 
-  private buildDeckId(name: string): string {
-    const slug = name
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '');
+  private isCommanderDeck(deck: Deck): boolean {
+    return deck.format.trim().toLowerCase() === 'commander';
+  }
 
-    return `${slug || 'deck'}-${Date.now()}`;
+  private getDeckUrl(deckId: string): string {
+    return `${this.decksApiUrl}/${encodeURIComponent(deckId)}`;
+  }
+
+  private getDeckCardsUrl(deckId: string, cardId?: string): string {
+    const deckCardsUrl = `${this.getDeckUrl(deckId)}/cards`;
+    return cardId ? `${deckCardsUrl}/${encodeURIComponent(cardId)}` : deckCardsUrl;
+  }
+
+  private fallbackOnNotFound<T>(fallbackValue: T): (error: HttpErrorResponse) => Observable<T> {
+    return (error: HttpErrorResponse) => {
+      if (error.status === 404) {
+        return of(fallbackValue);
+      }
+
+      return throwError(() => error);
+    };
+  }
+
+  private clearLoadError(): void {
+    this.loadErrorState.set('');
+  }
+
+  private applyDeckUpdate(deck: Deck): void {
+    this.clearLoadError();
+    this.upsertDeck(deck);
+  }
+
+  private upsertDeck(deck: Deck): void {
+    this.decksState.update((decks) => {
+      const deckIndex = decks.findIndex((currentDeck) => currentDeck.id === deck.id);
+      if (deckIndex === -1) {
+        return [...decks, deck];
+      }
+
+      const nextDecks = [...decks];
+      nextDecks[deckIndex] = deck;
+      return nextDecks;
+    });
   }
 }

@@ -1,23 +1,53 @@
+<section class="page page--spacious home-page">
+  <div class="home-page__hero">
+    <div class="home-page__hero-panel">
+      <div class="home-page__hero-content">
+        <h1 class="home-page__title">TCGLib</h1>
 
-<section class="space-y-8">
-  <header class="space-y-3">
-    <h1 class="text-3xl font-bold text-zinc-100 sm:text-9xl">Bienvenue sur TCGLib</h1>
-    <p class="max-w-2xl text-zinc-300">
-      
-    </p>
-  </header>
+        <div class="home-page__actions">
+          <a
+            routerLink="/cards"
+            class="button button--primary home-page__action"
+          >
+            Cartes
+          </a>
 
-  <div class="grid gap-4 md:grid-cols-2">
-    @for (action of quickActions; track action.path) {
-      <a
-        [routerLink]="action.path"
-        class="rounded-xl border border-zinc-800 bg-zinc-900 p-5 transition hover:border-amber-400/60 hover:bg-zinc-800/80"
-      >
-        <h2 class="text-lg font-semibold text-zinc-100">{{ action.label }}</h2>
-        <p class="mt-2 text-sm text-zinc-300">{{ action.description }}</p>
-      </a>
-    }
+          <a
+            routerLink="/decks"
+            class="button button--secondary home-page__action"
+          >
+            Decks
+          </a>
+        </div>
+      </div>
+    </div>
   </div>
 
-  
+  @if (featuredCards().length > 0) {
+    <div class="home-page__marquee-shell">
+      <div class="home-card-marquee">
+        @for (copy of marqueeCopies; track copy) {
+          <div class="home-card-marquee__group">
+            @for (card of featuredCards(); track card.id) {
+              <a
+                [routerLink]="['/cards', card.id]"
+                [queryParams]="{ fromHome: '1' }"
+                [attr.aria-label]="'Ouvrir ' + card.name"
+                [attr.title]="card.name"
+                class="home-page__card-link"
+              >
+                <img
+                  [src]="card.imageUrl"
+                  [alt]="card.name"
+                  class="home-page__card-image"
+                  decoding="async"
+                  loading="lazy"
+                />
+              </a>
+            }
+          </div>
+        }
+      </div>
+    </div>
+  }
 </section>

@@ -16,6 +16,8 @@ export class DecksPage {
   private readonly deckService = inject(DeckService);
 
   readonly decks = this.deckService.decks;
+  readonly decksLoading = this.deckService.loading;
+  readonly decksLoadError = this.deckService.loadError;
   readonly errorMessage = signal('');
   readonly successMessage = signal('');
   readonly selectedSort = signal<DeckSortOption>('recent');
@@ -43,15 +45,20 @@ export class DecksPage {
 
   createDeck(name: string, format: string): void {
     this.successMessage.set('');
-    const newDeck = this.deckService.createDeck(name, format);
+    this.deckService.createDeck(name, format).subscribe({
+      next: (newDeck) => {
+        if (!newDeck) {
+          this.errorMessage.set('Entre un nom de deck et un format.');
+          return;
+        }
 
-    if (!newDeck) {
-      this.errorMessage.set('Entre un nom de deck et un format.');
-      return;
-    }
-
-    this.errorMessage.set('');
-    void this.router.navigate(['/decks', newDeck.id]);
+        this.errorMessage.set('');
+        void this.router.navigate(['/decks', newDeck.id]);
+      },
+      error: () => {
+        this.errorMessage.set('Impossible de creer ce deck pour le moment.');
+      },
+    });
   }
 
   onSortChange(sort: string): void {
@@ -77,14 +84,19 @@ export class DecksPage {
       return;
     }
 
-    const removed = this.deckService.removeDeck(deck.id);
+    this.deckService.removeDeck(deck.id).subscribe({
+      next: (removed) => {
+        if (!removed) {
+          this.errorMessage.set('Impossible de supprimer ce deck.');
+          return;
+        }
 
-    if (!removed) {
-      this.errorMessage.set('Impossible de supprimer ce deck.');
-      return;
-    }
-
-    this.errorMessage.set('');
-    this.successMessage.set(`Le deck ${deck.name} a ete supprime.`);
+        this.errorMessage.set('');
+        this.successMessage.set(`Le deck ${deck.name} a ete supprime.`);
+      },
+      error: () => {
+        this.errorMessage.set('Impossible de supprimer ce deck.');
+      },
+    });
   }
 }

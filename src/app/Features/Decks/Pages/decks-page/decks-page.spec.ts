@@ -1,6 +1,7 @@
 import { signal } from '@angular/core';
 import { provideRouter } from '@angular/router';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { of } from 'rxjs';
 import { vi } from 'vitest';
 
 import { Deck, DeckValidationSummary } from '../../../../Models/Deck';
@@ -12,6 +13,8 @@ describe('DecksPage', () => {
   let fixture: ComponentFixture<DecksPage>;
   let deckServiceStub: {
     decks: ReturnType<typeof signal<Deck[]>>;
+    loading: ReturnType<typeof signal<boolean>>;
+    loadError: ReturnType<typeof signal<string>>;
     createDeck: ReturnType<typeof vi.fn>;
     removeDeck: ReturnType<typeof vi.fn>;
     getTotalCardCount: ReturnType<typeof vi.fn>;
@@ -46,8 +49,10 @@ describe('DecksPage', () => {
   beforeEach(async () => {
     deckServiceStub = {
       decks: signal<Deck[]>([mockDeck, secondDeck]),
-      createDeck: vi.fn().mockReturnValue(mockDeck),
-      removeDeck: vi.fn().mockReturnValue(true),
+      loading: signal(false),
+      loadError: signal(''),
+      createDeck: vi.fn().mockReturnValue(of(mockDeck)),
+      removeDeck: vi.fn().mockReturnValue(of(true)),
       getTotalCardCount: vi.fn().mockReturnValue(0),
       getDeckValidationSummary: vi.fn().mockReturnValue(mockSummary),
     };

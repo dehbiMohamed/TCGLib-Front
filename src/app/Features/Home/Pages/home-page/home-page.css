@@ -1,0 +1,138 @@
+:host {
+  display: block;
+}
+
+.home-page__hero {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42vh;
+  max-width: 42rem;
+  margin: 0 auto;
+}
+
+.home-page__hero-panel {
+  width: 100%;
+  padding: 1.5rem;
+  border: 1px solid #27272a;
+  border-radius: 2rem;
+  background: #09090b;
+}
+
+.home-page__hero-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  text-align: center;
+}
+
+.home-page__title {
+  color: #f4f4f5;
+  font-size: 2.25rem;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -0.025em;
+}
+
+.home-page__actions {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.home-page__action {
+  width: 100%;
+  min-height: 3.5rem;
+  padding: 1rem 1.25rem;
+  border-radius: 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.home-page__marquee-shell {
+  overflow: hidden;
+  padding: 1rem 0;
+  mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+}
+
+.home-card-marquee {
+  display: flex;
+  gap: 1.25rem;
+  width: max-content;
+}
+
+.home-card-marquee__group {
+  display: flex;
+  gap: 1.25rem;
+  min-width: max-content;
+  flex-shrink: 0;
+  animation: home-card-marquee 38s linear infinite;
+}
+
+.home-card-marquee:hover .home-card-marquee__group {
+  animation-play-state: paused;
+}
+
+.home-page__card-link {
+  display: block;
+  width: 10rem;
+  flex-shrink: 0;
+  overflow: hidden;
+  border: 1px solid #27272a;
+  border-radius: 1rem;
+  background: rgb(9 9 11 / 0.8);
+  box-shadow: 0 22px 52px -28px rgb(251 191 36 / 0.55);
+  transition: transform 0.2s ease;
+}
+
+.home-page__card-link:hover {
+  transform: translateY(-4px);
+}
+
+.home-page__card-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  aspect-ratio: 63 / 88;
+  object-fit: cover;
+}
+
+@keyframes home-card-marquee {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(calc(-100% - 1.25rem));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-card-marquee__group {
+    animation: none;
+  }
+}
+
+@media (min-width: 640px) {
+  .home-page__hero-panel {
+    padding: 2.5rem;
+  }
+
+  .home-page__title {
+    font-size: 3.75rem;
+  }
+
+  .home-page__actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .home-page__card-link {
+    width: 12rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .home-page__card-link {
+    width: 13rem;
+  }
+}
